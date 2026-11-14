@@ -1,0 +1,11 @@
+RELEASE CHECKLIST: WEEKLY PRODUCTION DEPLOYMENT
+
+1. Confirm all pull requests for the release are merged into main.
+2. Make sure the CI pipeline is green on main.
+3. Create a release branch named release/YYYY-MM-DD.
+4. Deploy the release branch to staging and run the smoke tests.
+5. Get approval from the product owner.
+6. Deploy to production using the deploy pipeline.
+7. Monitor error rates and dashboards for 30 minutes.
+8. Post release notes in the #releases channel.
+9. If something goes wrong, roll back using the rollback pipeline.

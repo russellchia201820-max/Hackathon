@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Last Expert · AI apprentice</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230e8a7a'/%3E%3Ctext x='16' y='21' font-size='14' font-family='Arial' font-weight='700' text-anchor='middle' fill='white'%3ELE%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">LE</div>
+      <div>
+        <div class="brand-name">Last Expert</div>
+        <div class="brand-sub">The apprentice that asks why</div>
+      </div>
+    </div>
+    <div class="session-controls">
+      <select id="sessionSelect" title="Switch session"></select>
+      <button id="newSessionBtn" class="btn">New session</button>
+    </div>
+    <div class="badges" id="badges"></div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="capture">1 · Capture from the expert</button>
+    <button class="tab-btn" data-tab="trainee">2 · Ask as a trainee</button>
+    <button class="tab-btn" data-tab="manual">3 · Manual &amp; exports</button>
+  </nav>
+
+  <main>
+    <!-- ============================== CAPTURE ============================== -->
+    <section id="tab-capture" class="tab active">
+      <div class="col chat-col">
+        <div class="objective" id="objectiveBar">
+          <div class="objective-topic" id="topicText">New session</div>
+          <div class="objective-goal" id="objectiveText">The apprentice will work out the objective from your first answer.</div>
+        </div>
+
+        <div id="chat" class="chat" aria-live="polite"></div>
+
+        <div class="why" id="whyBox" hidden>
+          <span class="why-label">Why this question</span>
+          <span id="whyText"></span>
+        </div>
+
+        <div class="composer">
+          <button id="micBtn" class="mic" title="Click to talk, click again to send">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+          </button>
+          <textarea id="input" rows="2" placeholder="Answer here, or press the mic and talk…"></textarea>
+          <button id="sendBtn" class="btn primary">Send</button>
+        </div>
+        <div class="composer-tools">
+          <label class="toggle"><input type="checkbox" id="speakToggle" checked /> Speak replies</label>
+          <span class="spacer"></span>
+          <select id="docKind" title="What kind of document is this?">
+            <option value="reference">Reference document (manual, guide, SOP)</option>
+            <option value="expert">Expert's own notes, transcript or recording</option>
+          </select>
+          <button id="uploadBtn" class="btn">Upload document</button>
+          <input type="file" id="fileInput" hidden accept=".txt,.md,.pdf,.docx,.csv,.json,.srt,.vtt,.mp3,.wav,.m4a,.mp4,.webm,.ogg,.flac" />
+        </div>
+      </div>
+
+      <aside class="col side-col">
+        <div class="recording-badge" id="recordingBadge" hidden>Recording what you just said into the knowledge base…</div>
+        <div class="card avatar-card" id="avatarCard" hidden>
+          <video id="avatarVideo" autoplay playsinline></video>
+          <div class="avatar-actions">
+            <button id="avatarBtn" class="btn primary">Start face-to-face</button>
+            <span class="muted small" id="avatarStatus">The avatar listens and asks the questions.</span>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><div class="stat-num" id="statKnowledge">0</div><div class="stat-label">Know-how captured</div></div>
+          <div class="stat accent"><div class="stat-num" id="statNotInManual">0</div><div class="stat-label">Not in any manual</div></div>
+          <div class="stat"><div class="stat-num" id="statAssumptions">0</div><div class="stat-label">Assumptions caught</div></div>
+          <div class="stat"><div class="stat-num" id="statCoverage">0%</div><div class="stat-label">Coverage</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>Coverage plan</h3><span class="muted small">keeps curiosity on track</span></div>
+          <div id="coverage" class="coverage"><p class="empty">Appears after the first answer.</p></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>Assumptions caught</h3><span class="muted small" id="assumptionCounts"></span></div>
+          <div id="assumptions" class="list"><p class="empty">Things the expert does automatically or takes for granted show up here.</p></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>Knowledge base</h3><span class="muted small">★ = not in any manual</span></div>
+          <div id="knowledge" class="list"><p class="empty">Nothing captured yet.</p></div>
+        </div>
+
+        <div class="card" id="docsCard" hidden>
+          <div class="card-head"><h3>Documents</h3></div>
+          <div id="documents" class="list"></div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- ============================== TRAINEE ============================== -->
+    <section id="tab-trainee" class="tab">
+      <div class="col chat-col">
+        <div class="objective">
+          <div class="objective-topic">Ask the apprentice</div>
+          <div class="objective-goal">It answers only from what the expert taught it. Anything it can't answer becomes a question for the expert's next session.</div>
+        </div>
+        <div id="traineeChat" class="chat"></div>
+        <div class="composer">
+          <button id="traineeMicBtn" class="mic" title="Click to talk, click again to send">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+          </button>
+          <textarea id="traineeInput" rows="2" placeholder="e.g. What should I check first if it doesn't work?"></textarea>
+          <button id="askBtn" class="btn primary">Ask</button>
+        </div>
+      </div>
+      <aside class="col side-col">
+        <div class="card">
+          <div class="card-head"><h3>Questions waiting for the expert</h3></div>
+          <div id="pending" class="list"><p class="empty">None yet.</p></div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- ============================== MANUAL ============================== -->
+    <section id="tab-manual" class="tab">
+      <div class="col wide">
+        <div class="manual-actions">
+          <button id="manualBtn" class="btn primary">Generate training manual</button>
+          <a class="btn" id="dlManual" href="#">Download manual (.md)</a>
+          <a class="btn" id="dlAgent" href="#">Download expert pack for other agents (.md)</a>
+          <a class="btn" id="dlJson" href="#">Download knowledge base (.json)</a>
+        </div>
+        <article id="manual" class="manual"><p class="empty">Generate a manual once the apprentice has learned something.</p></article>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="newSessionDialog">
+    <form method="dialog" id="newSessionForm">
+      <h3>New capture session</h3>
+      <p class="muted small">All optional. Any topic works: a task, a role, a craft, a process or a piece of software.</p>
+      <label>Expert's name <input name="expert_name" placeholder="e.g. Priya" /></label>
+      <label>Role <input name="expert_role" placeholder="e.g. Head chef, lab technician, release manager" /></label>
+      <label>Site <input name="site" placeholder="e.g. The kitchen, Lab 3, the London office" /></label>
+      <div class="dialog-actions">
+        <button value="cancel" class="btn">Cancel</button>
+        <button value="ok" class="btn primary">Start</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" hidden></div>
+  <script type="module" src="/static/app.js"></script>
+</body>
+</html>

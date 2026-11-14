@@ -1,0 +1,35 @@
+{
+  "id": "ee7b7ff304",
+  "created": 1794682543.5810363,
+  "updated": 1794682543.5811698,
+  "expert_name": "",
+  "expert_role": "",
+  "site": "",
+  "phase": "opening",
+  "topic": "",
+  "objective_type": "",
+  "objective": "",
+  "coverage": [],
+  "knowledge": [],
+  "assumptions": [],
+  "transcript": [
+    {
+      "role": "agent",
+      "text": "Hi, I'm here to learn from you. What do you want to talk about?",
+      "ts": 1794682543.581163,
+      "target_type": "opening",
+      "target_ref": null,
+      "why": "Let the expert choose what they want to teach."
+    }
+  ],
+  "documents": [],
+  "reference_points": [],
+  "pending_questions": [],
+  "trainee_log": [],
+  "manual_markdown": "",
+  "counters": {
+    "k": 0,
+    "a": 0,
+    "q": 0
+  }
+}
