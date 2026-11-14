@@ -11,7 +11,7 @@
 - [x] M6 polish: README (Built with, Bounties, Testing), DEVPOST.md and DEMO.md written, capture score inserted. Secret scan of the git history is clean. The GitHub push is left for the human (commands are in the handoff).
 - [x] M7 vision: verified with `scripts/voice_smoke.py --video` (fake camera feed): "look at this" → frame → Claude vision in 3.5 s → observation turn, thumbnail card on the panel, and the apprentice asks about what it saw.
 
-**Next:** once `.env` exists → `python scripts/check_keys.py` → `python cli.py --simulate --turns 12` → tune the prompts → record the capture score in NOTES, README and DEVPOST → live-test the voice and avatar.
+**Next:** all milestones built and tested by automation. Remaining work is human-only: the checklist below, the GitHub push, and the backup video. Ideas if time allows: Haiku for vision (faster), and a visible "avatar: Anam" badge.
 
 ## How to run
 ```bash
