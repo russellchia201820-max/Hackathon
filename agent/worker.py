@@ -147,6 +147,28 @@ class Apprentice(Agent):
         self.turn_done_at: float | None = None
         self.video: VideoWatcher | None = None
 
+    async def llm_node(self, chat_ctx, tools, model_settings):
+        """Stream the LLM reply but stop speaking after the first question mark (one question per turn).
+        Tool-call chunks always pass through."""
+        done_talking = self.s.phase == "done"
+        cut = False
+        async for chunk in Agent.default.llm_node(self, chat_ctx, tools, model_settings):
+            text = chunk if isinstance(chunk, str) else getattr(getattr(chunk, "delta", None), "content", None)
+            has_tools = bool(getattr(getattr(chunk, "delta", None), "tool_calls", None))
+            if cut:
+                if has_tools:
+                    chunk.delta.content = None
+                    yield chunk
+                continue
+            if text and not done_talking and "?" in text:
+                head = text[: text.index("?") + 1]
+                if isinstance(chunk, str):
+                    chunk = head
+                else:
+                    chunk.delta.content = head
+                cut = True
+            yield chunk
+
     async def on_user_turn_completed(self, turn_ctx: llm.ChatContext, new_message: llm.ChatMessage) -> None:
         await handle_expert_turn(self, turn_ctx, new_message.text_content or "")
 

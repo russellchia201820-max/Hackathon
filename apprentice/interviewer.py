@@ -70,5 +70,12 @@ def opening_line(s: Session) -> str:
     return f"Hi{name}, thanks so much for doing this. What are you going to teach me today?"
 
 
+def clip_to_one_question(text: str) -> str:
+    """Hard guarantee of rule 1: keep everything up to and including the first question mark."""
+    i = text.find("?")
+    return text[: i + 1].strip() if i != -1 else text.strip()
+
+
 async def reply(s: Session) -> str:
-    return await llm.complete("fast", build_instructions(s), llm.to_chat(s.transcript), max_tokens=150)
+    text = await llm.complete("fast", build_instructions(s), llm.to_chat(s.transcript), max_tokens=150)
+    return text if s.phase == "done" else clip_to_one_question(text)
