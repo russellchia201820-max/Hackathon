@@ -93,9 +93,9 @@ def merge(s: Session, out: dict) -> str:
     live = [g for g in s.gaps if g.status in ("open", "asked")]
     for g in out.get("new_gaps", [])[:3]:
         q = (g.get("question") or "").strip()
+        anchor = (g.get("anchor_quote") or "").strip()
         if not q or any(_similar(x.question, q, 0.75) or
-                        (g.get("anchor_quote") and _similar(x.anchor_quote, g["anchor_quote"], 0.9)
-                         and x.kind == g["kind"]) for x in live):
+                        (anchor and x.anchor_quote and _similar(x.anchor_quote, anchor, 0.8)) for x in live):
             continue
         gap = Gap(id=s.next_gap_id(), kind=g["kind"], anchor_quote=g.get("anchor_quote", ""), question=q,
                   slot=g["slot"], priority=max(1, min(5, int(g.get("priority", 3)))),
