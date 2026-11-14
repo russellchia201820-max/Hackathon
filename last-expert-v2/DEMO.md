@@ -22,7 +22,7 @@
 8. Evidence: the simulated-expert capture score (README).
 
 ## Fallback ladder (move down one rung if something breaks)
-1. **Avatar** (`AVATAR_ENABLED=true`, `AVATAR_PROVIDER=anam`, or `synthesia`; it tries the other automatically)
+1. **Avatar** (`AVATAR_ENABLED=true`, `AVATAR_PROVIDER=synthesia`; it falls back to Anam, then voice-only)
 2. **Voice-only with the orb.** Set `AVATAR_ENABLED=false` in `.env` and restart terminal 2. (This happens automatically if the avatar fails to start.)
 3. **Browser text mode.** Don't start a call; type answers in the box under the video. Only terminal 1 is needed.
 4. **Backup video.** Play the recorded demo (judging is live; this is only a safety net).

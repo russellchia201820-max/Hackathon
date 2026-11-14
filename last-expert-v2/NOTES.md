@@ -29,6 +29,8 @@ python scripts/mock_session.py               # mock session for UI work (no keys
 Without activating: prefix with `conda run -n ichack` or use `~/miniconda3/envs/ichack/bin/python`.
 
 ## Decisions
+- **Avatar = Synthesia** (track judges). `SYNTHESIA_AVATAR_ID=av_742cdfcc-4deb-49ec-8e28-4f90c907105c`: the interactive version of gallery avatar `98ad04b8-873c-4b6e-a555-b96879d6fc21`, created with `POST /api/interactive-avatars/avatars` (status completed). The LiveKit plugin prefixes `av_` onto raw gallery UUIDs itself. Synthesia startup is about 5 s (Anam 0.3 s). The free plan allows 1 concurrent session. Verified: `voice_smoke.py --drop-avatar` passes with Synthesia.
+- UI restyled to the original Last Expert look (light cards, stat tiles, coverage plan, tagged transcript, "why this question").
 - Brain (`apprentice/`) is pure Python; CLI, web text mode and voice worker all go through `apprentice/engine.py`.
 - State: `sessions/<id>/state.json`, atomic write (temp + rename), `version` counter bumps each save; panel polls `/state?since=<version>` every 1 s.
 - **Who writes state:** text-mode sessions → server process; voice sessions → worker process (server flips `mode` to `voice` when a token is issued and then only reads). Playbook goes to a separate `playbook.md`.

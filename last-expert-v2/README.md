@@ -22,7 +22,7 @@ Browser (index.html)                                Python backend
         │ WebRTC                                       ▼
         ▼                                         apprentice/  ← the brain (pure Python)
   LiveKit Cloud ◄──► LiveKit Agent worker ───────►  sessions/<id>/state.json
-                      ElevenLabs Scribe STT → Claude (+ tools) → ElevenLabs TTS → Anam / Synthesia avatar
+                      ElevenLabs Scribe STT → Claude (+ tools) → ElevenLabs TTS → Synthesia avatar
 ```
 
 ### Two loops: fast and slow
@@ -84,14 +84,14 @@ The voice agent has real **function tools** that it calls during the interview. 
 | **ElevenLabs Scribe v2 Realtime** | Streaming speech-to-text of the expert |
 | **ElevenLabs TTS** (Flash v2.5) | The apprentice's voice |
 | **LiveKit Cloud + LiveKit Agents 1.8** | WebRTC room, agent orchestration, turn detection (LiveKit turn detector + Silero VAD), noise cancellation (BVC), live transcriptions |
-| **Anam** interactive avatar ("Mia", LiveKit Anam plugin) | The apprentice's face. We demo with this. Our own STT, LLM and TTS drive it |
-| Synthesia interactive avatar (LiveKit plugin) | A configured fallback (`AVATAR_PROVIDER`). It is used only if Anam fails, before dropping to voice-only |
+| **Synthesia** interactive avatar (LiveKit Synthesia plugin) | The apprentice's face. We demo with this. Our own STT, LLM and TTS drive it |
+| Anam interactive avatar (LiveKit Anam plugin) | A configured fallback (`AVATAR_PROVIDER`). If the avatar drops mid-call, the browser reconnects voice-only automatically |
 | FastAPI, vanilla JS, marked.js, DOMPurify, livekit-client (CDN) | Server and UI, with no build step |
 | Dataset | None. Our test fixture (`tests/fixtures/expert_mineral_id.md`, 42 facts about identifying minerals) was written by us |
 
 ## Bounties
 - **Best ElevenLabs project.** A real-time voice agent that goes well beyond text-to-speech. ElevenLabs Scribe realtime transcribes the expert and ElevenLabs TTS voices the apprentice. Underneath sits a two-loop agent that analyses every answer as it arrives, decides what to ask next, and calls tools that change shared state the audience can see. We tuned turn-taking to be patient (experts pause mid-thought), and the interaction is designed around one short question per turn.
-- **Best use of Anam.** An Anam avatar is the apprentice's face. It is driven by our own LLM, STT and TTS stack, with tool calling (pinning insights, requesting visuals, ending the interview) and multi-modal input: the expert can *show* things on camera, and the avatar asks about what it sees.
+- **Synthesia avatar.** A Synthesia interactive avatar is the apprentice's face. Our own STT, LLM and TTS drive it through LiveKit, with tool calling (pinning insights, requesting visuals, ending the interview) and multi-modal input: the expert can *show* things on camera, and the avatar asks about what it sees.
 
 ## Roadmap
 - **Multi-task roles:** interview someone about a whole job, not just one task.
