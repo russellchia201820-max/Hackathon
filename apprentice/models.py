@@ -85,6 +85,7 @@ class Session(BaseModel):
     wrap_up_expert_turns: int = 0
     events: list[dict] = Field(default_factory=list)   # {ts, text, kind}
     frames: list[Frame] = Field(default_factory=list)
+    avatar_disabled: bool = False  # set when the avatar dropped mid-call; reconnects go voice-only
     visual_request: str = ""      # set by request_visual tool; UI shows a 'Show me' prompt
     mode: Literal["text", "voice"] = "text"
     version: int = 0

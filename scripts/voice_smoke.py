@@ -3,7 +3,9 @@
 speaks ElevenLabs-generated audio, and we check the worker transcribed it and replied.
 Needs: server on :8000 and `python agent/worker.py dev` running.
 Usage: python scripts/voice_smoke.py ["what the expert says" ...]
-       python scripts/voice_smoke.py --video   # also publish a camera feed (M7 'Show me' test)"""
+       python scripts/voice_smoke.py --video   # also publish a camera feed (M7 'Show me' test)
+       python scripts/voice_smoke.py --drop-avatar  # kill the avatar mid-call, reconnect like the browser,
+                                                    # check the call resumes voice-only"""
 import asyncio
 import os
 import sys
@@ -18,7 +20,8 @@ from livekit import rtc  # noqa: E402
 API = "http://localhost:8000"
 SR = 16000
 VIDEO = "--video" in sys.argv
-ARGS = [a for a in sys.argv[1:] if a != "--video"]
+DROP = "--drop-avatar" in sys.argv
+ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 LINES = ARGS or ([
     "Let me show you, look at this one here. See the colour and how it breaks?",
 ] if VIDEO else [
@@ -79,6 +82,46 @@ async def wait_agent_turns(h, sid, n_agent, timeout=40):
     return st, None
 
 
+async def drop_and_reconnect(h, sid, room):
+    """Remove the avatar participant, expect the agent to leave, rejoin like the browser does."""
+    from livekit import api
+    lk = api.LiveKitAPI(os.environ["LIVEKIT_URL"].replace("wss://", "https://"),
+                        os.environ["LIVEKIT_API_KEY"], os.environ["LIVEKIT_API_SECRET"])
+    av = [p for p in room.remote_participants.values() if "avatar" in p.identity]
+    if not av:
+        print("SKIP no avatar in room (AVATAR_ENABLED=false?)")
+        await lk.aclose()
+        return room, None
+    await lk.room.remove_participant(api.RoomParticipantIdentity(room=room.name, identity=av[0].identity))
+    await lk.aclose()
+    print(f"  removed {av[0].identity}; waiting for the agent to leave…")
+    t0 = time.time()
+    while time.time() - t0 < 20 and any(p.identity.startswith("agent-") for p in room.remote_participants.values()):
+        await asyncio.sleep(0.3)
+    left = not any(p.identity.startswith("agent-") for p in room.remote_participants.values())
+    print(("OK" if left else "FAIL") + f" agent left after {time.time() - t0:.1f}s")
+    st = (await h.get(f"{API}/api/session/{sid}/state")).json()
+    print(("OK" if st.get("avatar_disabled") else "FAIL") + " session marked avatar_disabled")
+    await room.disconnect()
+    tok = (await h.get(f"{API}/api/token", params={"session_id": sid, "name": "Sam"})).json()
+    room = rtc.Room()
+    await room.connect(tok["url"], tok["token"])
+    source = rtc.AudioSource(SR, 1)
+    await room.local_participant.publish_track(
+        rtc.LocalAudioTrack.create_audio_track("mic", source),
+        rtc.TrackPublishOptions(source=rtc.TrackSource.SOURCE_MICROPHONE))
+    n_agent = sum(t["speaker"] == "agent" for t in st["transcript"])
+    feeder = asyncio.create_task(silence(source, 14))
+    st2, dt = await wait_agent_turns(h, sid, n_agent + 1, timeout=30)
+    await feeder
+    if dt is None:
+        print("FAIL no welcome-back after reconnect")
+    else:
+        print(f"OK reconnected voice-only, apprentice said: {st2['transcript'][-1]['text']!r}")
+    print("  avatar in new room:", any("avatar" in p.identity for p in room.remote_participants.values()))
+    return room, source
+
+
 async def main():
     async with httpx.AsyncClient(timeout=30) as h:
         s = (await h.post(f"{API}/api/session", json={"objective": "How to identify minerals in a hand sample",
@@ -119,9 +162,10 @@ async def main():
         ok = True
         for k, pcm in enumerate(pcms, start=1):
             print(f"  expert speaks line {k} ({len(pcm) / 2 / SR:.1f}s)")
+            before = sum(t["speaker"] == "agent" for t in (await h.get(f"{API}/api/session/{sid}/state")).json()["transcript"])
             await speak(source, pcm)
             feeder = asyncio.create_task(silence(source, 15))
-            st, dt = await wait_agent_turns(h, sid, k + 1)
+            st, dt = await wait_agent_turns(h, sid, before + 1)
             experts = [t["text"] for t in st["transcript"] if t["speaker"] == "expert"]
             agents = [t["text"] for t in st["transcript"] if t["speaker"] == "agent"]
             if dt is None:
@@ -132,6 +176,8 @@ async def main():
             print(f"OK heard: {experts[-1]!r}")
             print(f"OK reply (+{dt:.1f}s after turn end incl. silence): {agents[-1]!r}")
             await feeder
+            if DROP and k == 1:
+                room, source = await drop_and_reconnect(h, sid, room)
         st = (await h.get(f"{API}/api/session/{sid}/state")).json()
         await asyncio.sleep(1)
         st = (await h.get(f"{API}/api/session/{sid}/state")).json()

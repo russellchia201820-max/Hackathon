@@ -312,6 +312,8 @@ $("btnReset").addEventListener("click", async () => {
 
 /* ---------------- voice: LiveKit ---------------- */
 let room = null;
+let userHangup = false;
+let reconnects = [];
 const LK = window.LivekitClient;
 
 function setOrb(mode, label) {
@@ -358,6 +360,17 @@ async function startCall() {
         { speaking: "Speaking", thinking: "Thinking…", listening: "Listening", initializing: "Joining…" }[st] || st);
     });
     room.on(LK.RoomEvent.Disconnected, () => onDisconnected());
+    // the agent left without us hanging up (e.g. the avatar dropped): reconnect automatically,
+    // the worker resumes the same session (voice-only if the avatar was the problem)
+    room.on(LK.RoomEvent.ParticipantDisconnected, (p) => {
+      if (!p.identity.startsWith("agent-") || userHangup) return;
+      const now = Date.now();
+      reconnects = reconnects.filter((t) => now - t < 60000);
+      if (reconnects.length >= 3) { toast("The apprentice keeps dropping. Click Start call to retry, or use text mode."); hangUp(); return; }
+      reconnects.push(now);
+      toast("The apprentice dropped. Reconnecting…", "info");
+      hangUp().then(() => setTimeout(startCall, 800));
+    });
 
     room.registerTextStreamHandler("lk.transcription", async (reader, info) => {
       const trackId = reader.info.attributes?.["lk.transcribed_track_id"];
@@ -403,7 +416,9 @@ async function hangUp() {
   onDisconnected();
 }
 
-$("btnCall").addEventListener("click", () => (room ? hangUp() : startCall()));
+$("btnCall").addEventListener("click", async () => {
+  if (room) { userHangup = true; await hangUp(); userHangup = false; } else startCall();
+});
 $("btnMute").addEventListener("click", async () => {
   if (!room) return;
   const on = room.localParticipant.isMicrophoneEnabled;

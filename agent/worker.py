@@ -145,6 +145,7 @@ class Apprentice(Agent):
         self.s = s
         self.runner = engine.runner(s, on_log=lambda line: log.info("[analyst] %s", line))
         self.turn_done_at: float | None = None
+        self.on_turn = None   # set in entrypoint: arms the no-reply watchdog
         self.video: VideoWatcher | None = None
 
     async def llm_node(self, chat_ctx, tools, model_settings):
@@ -216,6 +217,8 @@ async def handle_expert_turn(agent: Apprentice, turn_ctx: llm.ChatContext, text:
     update_instructions(turn_ctx, instructions=instr, add_if_missing=True)  # this reply
     await agent.update_instructions(instr)    # future replies
     agent.turn_done_at = time.time()
+    if agent.on_turn:
+        agent.on_turn(agent.turn_done_at)
     log.info("turn hook %.0fms (phase=%s, candidates=%d)", 1000 * (time.time() - t0), s.phase,
              len([g for g in s.gaps if g.status in ("open", "asked")]))
 
@@ -320,7 +323,58 @@ async def entrypoint(ctx: JobContext) -> None:
         s.log(msg[:300], "error")
         store.save(s)
 
-    provider = await start_avatar(session, ctx.room)
+    # ---- resilience: the avatar can die mid-call (Anam session/concurrency limits) and
+    # take all agent audio with it. Detect it, mark the session voice-only and end this
+    # job; the browser auto-reconnects and the next job resumes without the avatar.
+    avatar_ids = {"anam-avatar-agent", "synthesia-avatar-agent"}
+    state = {"avatar": None, "lost": False}
+
+    def avatar_lost(reason: str) -> None:
+        if state["lost"]:
+            return
+        state["lost"] = True
+        log.warning("AVATAR LOST (%s) -> ending call so the browser reconnects voice-only", reason)
+        s.avatar_disabled = True
+        s.log(f"Avatar dropped ({reason}). Reconnecting voice-only…", "error")
+        store.save(s)
+        ctx.shutdown(reason=f"avatar lost: {reason}")
+
+    @ctx.room.on("participant_disconnected")
+    def _on_left(p) -> None:
+        if state["avatar"] and p.identity in avatar_ids:
+            avatar_lost("avatar left the room")
+
+    reply_timeout = float(os.getenv("REPLY_TIMEOUT_S", "8"))
+
+    async def watchdog(token: float) -> None:
+        await asyncio.sleep(reply_timeout)
+        if agent.turn_done_at != token or state["lost"]:
+            return  # it spoke, or a newer turn superseded this one
+        if getattr(session, "user_state", "") == "speaking":
+            return
+        if state["avatar"]:
+            avatar_lost(f"no reply audio for {reply_timeout:.0f}s")
+        else:
+            log.warning("WATCHDOG no reply after %.0fs -> re-prompting", reply_timeout)
+            s.log("Apprentice went quiet; nudged it to reply", "info")
+            agent.turn_done_at = time.time()
+            session.generate_reply(instructions="Respond to the expert's last message with one short question.")
+
+    watch_tasks: set = set()
+
+    def arm(token: float) -> None:
+        t = asyncio.create_task(watchdog(token))
+        watch_tasks.add(t)
+        t.add_done_callback(watch_tasks.discard)
+
+    agent.on_turn = arm
+
+    if s.avatar_disabled:
+        log.info("avatar disabled for this session after an earlier drop -> voice-only")
+        provider = None
+    else:
+        provider = await start_avatar(session, ctx.room)
+    state["avatar"] = provider
     s.log(f"avatar: {provider}" if provider else "avatar: off (voice-only)", "info")
 
     nc = noise_cancellation()
