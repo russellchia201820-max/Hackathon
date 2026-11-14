@@ -15,10 +15,10 @@ At the end, **Generate playbook** produces a beginner-ready training document wi
 - **Two loops.** A fast interviewer (Claude Haiku 5.5) speaks one short question per turn in about a second. A slow analyst (Claude Sonnet 5.5) runs in the background after every answer. It extracts atomic knowledge items, spots assumptions, and writes follow-up questions using Cognitive Task Analysis and Critical Decision Method techniques ("Tell me about a time this went wrong", "What's the first thing you notice when…").
 - **A deterministic selector** ranks the open gaps and feeds the best three, with anchor quotes, back to the interviewer before each reply. That lets it bridge naturally: "Earlier you said 'you just know'. What are you actually seeing?"
 - **Tool calling:** the agent pins key insights, asks to see things on camera (Claude vision then describes the frame), and ends the interview when coverage is complete. Every tool call appears on the panel.
-- **Voice and face:** ElevenLabs Scribe realtime STT, ElevenLabs TTS, LiveKit Agents and an Anam (or Synthesia) avatar.
+- **Voice and face:** ElevenLabs Scribe realtime STT, ElevenLabs TTS, LiveKit Agents and a Synthesia interactive avatar.
 
 ## Evidence
 Against a simulated expert holding 42 hidden facts about identifying minerals, Last Expert captured **78.6%** of them in 15 questions. The expert played its part like a real one: jargon, skipped steps, "you just know".
 
 ## Built with
-Anthropic Claude (Haiku 5.5, Sonnet 5.5) · ElevenLabs Scribe v2 Realtime STT · ElevenLabs TTS · LiveKit Cloud and LiveKit Agents · Anam / Synthesia interactive avatars · FastAPI · vanilla JS
+Anthropic Claude (Haiku 5.5, Sonnet 5.5) · ElevenLabs Scribe v2 Realtime STT · ElevenLabs TTS · LiveKit Cloud and LiveKit Agents · Synthesia interactive avatar (Anam as fallback) · FastAPI · vanilla JS
