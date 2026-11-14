@@ -193,6 +193,11 @@ class Apprentice(Agent):
         return tools.end_interview(self.s)
 
 
+EMPHASIS = __import__("re").compile(
+    r"\b(key thing|most important|the important (thing|bit|part)|crucial|critical|never ever|always,? always|"
+    r"the one thing|whatever you do|golden rule|number one rule|biggest mistake)\b", __import__("re").I)
+
+
 async def handle_expert_turn(agent: Apprentice, turn_ctx: llm.ChatContext, text: str) -> None:
     """The integration point: record turn -> analyst in background -> refresh instructions."""
     t0 = time.time()
@@ -202,6 +207,10 @@ async def handle_expert_turn(agent: Apprentice, turn_ctx: llm.ChatContext, text:
     s = agent.s
     engine.add_expert_turn(s, text)          # 1. append + save
     await maybe_look(agent, turn_ctx, text)   # M7: "look at this" -> grab frame -> Claude vision
+    if EMPHASIS.search(text):                 # nudge the LLM to use its tool on stressed points
+        turn_ctx.add_message(role="system", content=(
+            "The expert just stressed a key point. Call flag_important with a one-sentence standalone "
+            "summary of it, then ask your one question."))
     agent.runner.trigger()                    # 2. analyst in background (never awaited)
     instr = interviewer.build_instructions(s, voice=True)  # 3. fresh context with current candidates
     update_instructions(turn_ctx, instructions=instr, add_if_missing=True)  # this reply
@@ -253,7 +262,13 @@ def prewarm(proc: JobProcess) -> None:
     proc.userdata["vad"] = silero.VAD.load()
 
 
-server = AgentServer(setup_fnc=prewarm)
+def prewarm_all(proc: JobProcess) -> None:
+    prewarm(proc)
+    import anthropic.types  # noqa: F401  (avoid a ~2 s import stall on the first reply)
+
+
+# keep one process warm so a call starts instantly (dev mode defaults to 0)
+server = AgentServer(setup_fnc=prewarm_all, num_idle_processes=1)
 
 
 @server.rtc_session(agent_name="apprentice")
@@ -280,8 +295,17 @@ async def entrypoint(ctx: JobContext) -> None:
             return
         text = (item.text_content or "").strip()
         last = s.last_agent_turn()
-        if text and not (last and last.text == text):
+        # skip repeats, including an interrupted (truncated) copy of the line we just recorded
+        if text and not (last and last.text.startswith(text)):
             engine.add_agent_turn(s, text)
+        m = getattr(item, "metrics", None)
+        if m:
+            log.info("TURN METRICS %s", {k: round(v, 2) if isinstance(v, float) else v for k, v in dict(m).items()})
+
+    @session.on("function_tools_executed")
+    def _on_tools(ev) -> None:
+        for c in ev.function_calls:
+            log.info("TOOL CALL %s(%s)", c.name, c.arguments)
 
     @session.on("agent_state_changed")
     def _on_state(ev) -> None:
@@ -305,7 +329,7 @@ async def entrypoint(ctx: JobContext) -> None:
 
     if s.expert_turn_count() == 0:
         opening = s.last_agent_turn().text if s.last_agent_turn() else interviewer.opening_line(s)
-        session.say(opening)
+        session.say(opening, allow_interruptions=False)
     else:
         session.generate_reply(instructions="Welcome the expert back in one short sentence, then ask your next question.")
 

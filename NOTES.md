@@ -6,7 +6,7 @@
 - [x] M1 brain + CLI: 3 tuning rounds done, capture score **78.6% in 15 questions** (table below).
 - [x] M2 server + panel: live text interview via API (turn returns in ~2.9 s, analyst runs in background, panel updates; headless screenshot, no JS errors). Gap dedup by anchor quote.
 - [x] M3 playbook + ask: playbook 13 s (all sections incl. Not yet covered); ask covered → cited items, pyrite-vs-gold → covered=false with closest info.
-- [~] M4 voice: `agent/worker.py` uses ElevenLabs Scribe v2 realtime STT and ElevenLabs TTS (flash v2.5), with Claude Haiku plus the tools `flag_important`, `request_visual` and `end_interview`. Tool effects are in `apprentice/tools.py`, and the panel shows them as 🔧 chips. The unit test passes. Needs keys.
+- [x] M4 voice: worker registers with LiveKit Cloud; **automated end-to-end voice test passes** (`scripts/voice_smoke.py`: fake expert speaks ElevenLabs audio into the room → Scribe transcribes accurately → apprentice replies → analyst fills panel → `flag_important` tool fires and pins a ★ card). Latency: LLM TTFT 0.8–0.9 s, TTS TTFB 0.13 s, ≈1.3–2.4 s after the 1.2 s end-of-turn wait.
 - [~] M5 avatar: `agent/avatar.py` switches between Anam and Synthesia, with an automatic fallback to the other provider and then to voice-only. Needs keys.
 - [~] M6 polish: README (with Built with and Bounties sections), DEVPOST.md and DEMO.md are written. Still to do: insert the capture score, then make the GitHub repo public.
 - [~] M7 vision: written (a "look at this" trigger or `request_visual` → frame → Claude vision → observation and thumbnail). Untested live.
@@ -45,6 +45,10 @@ Without activating: prefix with `conda run -n ichack` or use `~/miniconda3/envs/
 - Agent dispatch is explicit: token carries `RoomConfiguration(agents=[RoomAgentDispatch(agent_name="apprentice", metadata={session_id})])`.
 
 ## Gotchas
+- Opening line was recorded twice when the expert talked over it (interrupted copy). Fixed: opening is non-interruptible and truncated repeats are skipped.
+- Haiku sometimes *says* "I'm flagging that" without calling the tool. Fixed: an emphasis regex ("key thing", "most important", "never ever"…) injects a system nudge into that turn's context; tool calls are logged as `TOOL CALL`.
+- dev mode keeps 0 warm processes by default → 5 s cold start per call. Set `num_idle_processes=1`.
+- `voice_smoke.py` measures "+Ns after turn end" from when the agent's reply is *recorded* (after it finishes speaking), so it overstates latency; trust the worker's `LATENCY` / `TURN METRICS` log lines.
 - livekit-agents 1.8: `livekit.plugins.turn_detector` is deprecated → use `livekit.agents.inference.TurnDetector`. `python worker.py dev` still works (prints a deprecation warning; `lk agent dev` is the new way).
 - `temperature` must not be sent to current Claude models (400).
 - Headless screenshots: Playwright chromium needed `nss nspr alsa-lib` from conda-forge; run with `LD_LIBRARY_PATH=~/miniconda3/envs/ichack/lib python scripts/screenshot.py <sid> out.png`.
