@@ -1,6 +1,7 @@
 """The coverage checklist: slots any task needs covered."""
 
 CHECKLIST: dict[str, dict] = {
+    "specifics": {"label": "Specifics", "desc": "The concrete facts needed to actually do it: places (start, destination, where things are), names, routes or numbers, distances, durations, times, quantities, who is involved"},
     "goal": {"label": "Goal", "desc": "What the task achieves and what 'done well' looks like"},
     "steps": {"label": "Steps", "desc": "The sequence, end to end"},
     "decisions": {"label": "Decisions", "desc": "Decision points and rules ('if X then Y')"},

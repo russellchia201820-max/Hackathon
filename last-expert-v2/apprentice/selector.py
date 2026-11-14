@@ -6,6 +6,7 @@ import os
 from .models import Gap, Session
 
 OPENING_TURNS = 2
+MIN_TURNS_BEFORE_WRAP = int(__import__('os').getenv('MIN_TURNS_BEFORE_WRAP', '10'))
 
 
 def _matches_topic(g: Gap, topic: str) -> bool:
@@ -51,7 +52,10 @@ def update_phase(s: Session) -> str:
     max_turns = int(os.getenv("MAX_TURNS", "30"))
     if s.phase == "opening" and n >= OPENING_TURNS:
         s.phase = "deep_dive"
-    if s.phase == "deep_dive" and (wrap_up_ready(s) or s.analyst_ready_to_wrap or n >= max_turns):
+    ready = (wrap_up_ready(s) or s.analyst_ready_to_wrap) and n >= MIN_TURNS_BEFORE_WRAP
+    specifics_missing = s.coverage["specifics"].status == "empty" or any(
+        g.status in ("open", "asked") and g.slot == "specifics" and g.priority >= 5 for g in s.gaps)
+    if s.phase == "deep_dive" and ((ready and not specifics_missing) or n >= max_turns):
         s.phase = "wrap_up"
         s.log("Entering wrap-up", "phase")
     if s.phase == "wrap_up" and s.wrap_up_expert_turns >= 2:

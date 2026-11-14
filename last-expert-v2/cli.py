@@ -19,6 +19,13 @@ from apprentice.models import Session
 ROOT = Path(__file__).parent
 FIXTURE = ROOT / "tests" / "fixtures" / "expert_mineral_id.md"
 
+
+def fixture_meta(text: str) -> tuple[str, str]:
+    obj = next((l.split(":", 1)[1].strip() for l in text.splitlines() if l.startswith("Objective:")),
+               "How to identify common minerals in a hand sample")
+    name = next((l.split(":", 1)[1].strip() for l in text.splitlines() if l.startswith("Name:")), "Sam")
+    return obj, name
+
 C = {"agent": "\033[96m", "expert": "\033[93m", "log": "\033[90m", "end": "\033[0m", "bold": "\033[1m"}
 
 SIM_SYSTEM = """You are role-playing a real human expert being interviewed by an apprentice on a voice call.
@@ -74,8 +81,8 @@ async def capture_score(knowledge: str, s: Session) -> dict:
 
 async def run(args) -> None:
     if args.simulate:
-        knowledge = FIXTURE.read_text()
-        s = engine.new_session("How to identify common minerals in a hand sample", "Sam")
+        knowledge = Path(args.fixture).read_text() if args.fixture else FIXTURE.read_text()
+        s = engine.new_session(*fixture_meta(knowledge))
     else:
         obj = input("What will you teach today? > ").strip() or "How to make a great cup of coffee"
         name = input("Your name? > ").strip() or "Expert"
@@ -121,6 +128,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--simulate", action="store_true")
     ap.add_argument("--turns", type=int, default=30)
+    ap.add_argument("--fixture", help="hidden-knowledge file for --simulate (default: minerals)")
     ap.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO if args.verbose else logging.WARNING)

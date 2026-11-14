@@ -2,6 +2,7 @@
 "use strict";
 
 const SLOTS = {
+  specifics: "Specifics: where, which, how far, when",
   goal: "Goal and what good looks like",
   steps: "Steps, end to end",
   decisions: "Decision rules",
@@ -211,7 +212,9 @@ function agentTag(s, t, nAgentBefore) {
   const g = s.gaps.find((x) => (x.asked_turns || []).includes(t.index));
   if (g) return `Probing an assumption · ${g.id}`;
   if (nAgentBefore === 0) return "Opening";
-  if (s.phase === "wrap_up" || s.phase === "done") return "Wrapping up";
+  const ph = t.phase || "";
+  if (ph === "opening") return "Getting the big picture";
+  if (ph === "wrap_up" || ph === "done") return "Wrapping up";
   return "Following up";
 }
 
