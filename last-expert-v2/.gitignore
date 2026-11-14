@@ -1,0 +1,13 @@
+.env
+sessions/
+__pycache__/
+*.pyc
+.venv/
+*.log
+*.swp
+*.swo
+.*.swp
+*~
+.env.*
+!.env.example
+logs/
