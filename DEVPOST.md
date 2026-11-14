@@ -18,7 +18,7 @@ At the end, **Generate playbook** produces a beginner-ready training document wi
 - **Voice and face:** ElevenLabs Scribe realtime STT, ElevenLabs TTS, LiveKit Agents and an Anam (or Synthesia) avatar.
 
 ## Evidence
-Against a simulated expert holding 42 hidden facts about identifying minerals, Apprentice captured **[CAPTURE_SCORE]** of them in [N] questions. The expert played its part like a real one: jargon, skipped steps, "you just know".
+Against a simulated expert holding 42 hidden facts about identifying minerals, Apprentice captured **78.6%** of them in 15 questions. The expert played its part like a real one: jargon, skipped steps, "you just know".
 
 ## Built with
 Anthropic Claude (Haiku 5.5, Sonnet 5.5) · ElevenLabs Scribe v2 Realtime STT · ElevenLabs TTS · LiveKit Cloud and LiveKit Agents · Anam / Synthesia interactive avatars · FastAPI · vanilla JS

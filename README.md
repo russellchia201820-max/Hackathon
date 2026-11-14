@@ -48,7 +48,7 @@ The coverage checklist (goal, steps, decisions, cues, mistakes, edge cases, tool
 ## Evidence: simulated-expert capture score
 `python cli.py --simulate --turns 15` runs the apprentice against a simulated expert. That expert is a Claude role-play of a field geologist who holds 42 hidden facts about identifying minerals and answers like a real expert: jargon, skipped steps, "you just know". A separate grader then counts how many hidden facts ended up in the knowledge base.
 
-**Result:** _see NOTES.md → Capture score_
+**Result:** Apprentice captured **78.6% of the expert's hidden knowledge in 15 questions** (24 facts fully and 18 partially, out of 42). Interviewer replies averaged **1.3 s**. Three prompt-tuning rounds took the score from 28.6% to 78.6% (see NOTES.md).
 
 ## Setup
 ```bash

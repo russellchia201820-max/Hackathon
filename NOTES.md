@@ -2,8 +2,8 @@
 
 ## Progress (update after every milestone)
 **Spec change (Sat eve):** hackathon services only. ElevenLabs is used for STT and TTS, there is no Deepgram, and the avatar is switchable through `AVATAR_PROVIDER=anam|synthesia`. Anam keys are "coming soon", so Synthesia is the first target.
-- [x] M0 setup: conda env `ichack` (py3.11), repo, requirements, `.env.example`, `scripts/check_keys.py` (Anthropic, ElevenLabs key + TTS, LiveKit, Synthesia, Anam). **The key check is still pending because `.env` isn't filled in yet.**
-- [~] M1 brain + CLI: all code written. **Needs the Anthropic key to run and tune.**
+- [x] M0 setup: key check 7/9 OK on Sat; avatar IDs then filled: Anam = Mia studio `edf6fdcb-acab-44b8-b974-ded72665ee26`, voice = ElevenLabs Jessica `cgSgspJ2msm6clMCkdW9`. **SYNTHESIA_AVATAR_ID still blank**: Synthesia has no listing API, so copy one from app.synthesia.io → Avatars (human).
+- [x] M1 brain + CLI: 3 tuning rounds done, capture score **78.6% in 15 questions** (table below).
 - [~] M2 server + panel: verified with a mock session (curl, plus a headless screenshot with no JS errors).
 - [~] M3 playbook + ask: code and UI done; not yet tested against the API.
 - [~] M4 voice: `agent/worker.py` uses ElevenLabs Scribe v2 realtime STT and ElevenLabs TTS (flash v2.5), with Claude Haiku plus the tools `flag_important`, `request_visual` and `end_interview`. Tool effects are in `apprentice/tools.py`, and the panel shows them as 🔧 chips. The unit test passes. Needs keys.
@@ -51,7 +51,12 @@ Without activating: prefix with `conda run -n ichack` or use `~/miniconda3/envs/
 - Mic only works on `http://localhost:8000` (not an IP). Use headphones (echo).
 
 ## Capture score (simulated expert, tests/fixtures/expert_mineral_id.md, 42 facts)
-- (pending keys)
+| Run | Turns | Score | Notes |
+|---|---|---|---|
+| baseline | 6 | 28.6% | sim expert too chatty; double questions; early rabbit holes |
+| round 1 (one question, breadth, opening walkthrough, terser sim expert) | 12 | 48.8% | still drilled the streak test for 4 Qs |
+| round 2 (selector: empty-slot +3, topic +1; "still thin" list) | 12 | 65.5% | recaps + occasional double questions |
+| **round 3 (hard clip after first '?', no recaps)** | **15** | **78.6%** (24 full + 18 partial / 42) | 52 items, 19 gaps (12 resolved), coverage 88%, reply latency avg 1.32 s |
 
 ## Cut / fallbacks
 - (none yet)
