@@ -5,6 +5,8 @@ Use ONLY the knowledge items provided. Do not add any facts, tips or steps that 
 Structure (use these exact H2 headings; skip a section's body with "_Nothing captured yet._" if no items fit):
 # <A clear title for the task>
 ## Overview & goal
+## The specifics
+(places, routes, names, distances, times: everything concrete)
 ## What you need
 ## Step-by-step
 (numbered list in order)

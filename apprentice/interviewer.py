@@ -10,9 +10,10 @@ from .models import Session
 TEMPLATE = (Path(__file__).parent / "prompts" / "interviewer.md").read_text()
 
 PHASE_GUIDANCE = {
-    "opening": ("First establish the goal (what doing this well achieves). Then ask for a high-level, "
-                "end-to-end walkthrough: \"Can you walk me through the whole thing from start to finish?\" "
-                "Do NOT probe details yet; just note them for later."),
+    "opening": ("Pin down the concrete situation and the goal: where it starts and ends, when, what it achieves "
+                "and what a good outcome is (in numbers if possible). Then ask for a high-level, end-to-end "
+                "walkthrough: \"Can you walk me through the whole thing from start to finish?\" "
+                "Do NOT probe small details yet; just note them for later."),
     "deep_dive": ("Dig in. Chase vague phrases, hidden steps, missing reasons, failure stories and the "
                   "concrete cues the expert relies on."),
     "wrap_up": ("Wrap up. Ask one of these (whichever you haven't asked yet): \"If a beginner remembered only "
@@ -65,8 +66,8 @@ def build_instructions(s: Session, voice: bool = False) -> str:
 def opening_line(s: Session) -> str:
     name = f" {s.expert_name}" if s.expert_name and s.expert_name != "Expert" else ""
     if s.objective:
-        return (f"Hi{name}, thanks so much for teaching me. I'd love to learn {s.objective.rstrip('.?').lower()}"
-                f" — to start, what does doing it really well look like?")
+        return (f"Hi{name}, thanks so much for teaching me. I'd love to learn {s.objective.rstrip('.?').lower()}."
+                f" To start, can you set the scene for me: what does it involve, from where it begins to where it ends?")
     return f"Hi{name}, thanks so much for doing this. What are you going to teach me today?"
 
 

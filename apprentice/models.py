@@ -4,7 +4,7 @@ import time
 import uuid
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from .checklist import SLOTS
 
@@ -26,6 +26,7 @@ class Turn(BaseModel):
     text: str
     ts: float = Field(default_factory=now)
     index: int = 0
+    phase: str = ""   # interview phase when the turn was said (for UI tags)
 
 
 class KnowledgeItem(BaseModel):
@@ -92,9 +93,15 @@ class Session(BaseModel):
     created_at: float = Field(default_factory=now)
     updated_at: float = Field(default_factory=now)
 
+    @model_validator(mode="after")
+    def _all_slots(self):
+        for slot in SLOTS:  # sessions saved before a slot was added
+            self.coverage.setdefault(slot, SlotCoverage())
+        return self
+
     # ---- helpers ----
     def add_turn(self, speaker: str, text: str) -> Turn:
-        t = Turn(speaker=speaker, text=text.strip(), index=len(self.transcript))
+        t = Turn(speaker=speaker, text=text.strip(), index=len(self.transcript), phase=self.phase)
         self.transcript.append(t)
         return t
 
