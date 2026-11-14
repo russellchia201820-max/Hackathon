@@ -7,7 +7,7 @@
 - [x] M2 server + panel: live text interview via API (turn returns in ~2.9 s, analyst runs in background, panel updates; headless screenshot, no JS errors). Gap dedup by anchor quote.
 - [x] M3 playbook + ask: playbook 13 s (all sections incl. Not yet covered); ask covered → cited items, pyrite-vs-gold → covered=false with closest info.
 - [x] M4 voice: worker registers with LiveKit Cloud; **automated end-to-end voice test passes** (`scripts/voice_smoke.py`: fake expert speaks ElevenLabs audio into the room → Scribe transcribes accurately → apprentice replies → analyst fills panel → `flag_important` tool fires and pins a ★ card). Latency: LLM TTFT 0.8–0.9 s, TTS TTFB 0.13 s, ≈1.3–2.4 s after the 1.2 s end-of-turn wait.
-- [~] M5 avatar: `agent/avatar.py` switches between Anam and Synthesia, with an automatic fallback to the other provider and then to voice-only. Needs keys.
+- [x] M5 avatar: **Anam (Mia) verified live**: starts in 0.3 s, publishes video and audio; lip-sync adds 0.3–0.5 s of playback latency. Fallback verified: a bogus Anam ID (404) → Synthesia (no ID) → voice-only, and the interview carries on. Synthesia is untested live until a `SYNTHESIA_AVATAR_ID` is set (human task).
 - [~] M6 polish: README (with Built with and Bounties sections), DEVPOST.md and DEMO.md are written. Still to do: insert the capture score, then make the GitHub repo public.
 - [~] M7 vision: written (a "look at this" trigger or `request_visual` → frame → Claude vision → observation and thumbnail). Untested live.
 
@@ -72,7 +72,8 @@ Without activating: prefix with `conda run -n ichack` or use `~/miniconda3/envs/
 - [ ] Start call, talk to it with **headphones**, confirm captions + panel fill during a spoken interview
 - [ ] Check it doesn't cut you off mid-thought (tune `TURN_END_DELAY_S`, e.g. 1.5)
 - [ ] Full interview with the Synthesia avatar (`AVATAR_ENABLED=true`, `AVATAR_PROVIDER=synthesia`); note avatar lag
-- [ ] Same with Anam once keys arrive (`AVATAR_PROVIDER=anam`) — demo with Anam if it works
+- [ ] Watch the Anam avatar (Mia) in the browser during a real call: lip-sync OK? (`AVATAR_PROVIDER=anam`, now the default)
+- [ ] Optional: copy a Synthesia interactive-avatar ID from app.synthesia.io → `SYNTHESIA_AVATAR_ID` (fallback only)
 - [ ] Say "the key thing is…" → 🔧 chip + ★ pinned card; let it ask to see something → Show me → thumbnail
 - [ ] Pick a warm ElevenLabs voice and set `ELEVENLABS_VOICE_ID`
 - [ ] View the page on the projector from 3 m — legible?
