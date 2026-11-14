@@ -17,12 +17,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from apprentice import engine, interviewer, store  # noqa: E402  (loads .env)
+from apprentice import engine, interviewer, store, vision  # noqa: E402  (loads .env)
 from apprentice.models import Session  # noqa: E402
 from livekit import agents  # noqa: E402
 from livekit.agents import (  # noqa: E402
     Agent, AgentServer, AgentSession, JobContext, JobProcess, llm, room_io)
 from livekit.agents.voice.generation import update_instructions  # noqa: E402
+from livekit import rtc  # noqa: E402
+from livekit.agents.utils.images import EncodeOptions, ResizeOptions, encode  # noqa: E402
 from livekit.plugins import deepgram, silero  # noqa: E402
 
 log = logging.getLogger("apprentice.worker")
@@ -84,6 +86,40 @@ def noise_cancellation():
         return None
 
 
+# ---------------------------------------------------------------- M7: expert camera
+class VideoWatcher:
+    """Keeps the latest frame of the expert's camera."""
+
+    def __init__(self) -> None:
+        self.latest: rtc.VideoFrame | None = None
+        self.latest_at = 0.0
+        self._tasks: set[asyncio.Task] = set()
+
+    def attach(self, room: rtc.Room) -> None:
+        @room.on("track_subscribed")
+        def _sub(track, pub, participant) -> None:
+            if track.kind == rtc.TrackKind.KIND_VIDEO and participant.identity.startswith("expert-"):
+                log.info("expert camera subscribed")
+                t = asyncio.create_task(self._read(track))
+                self._tasks.add(t)
+                t.add_done_callback(self._tasks.discard)
+
+        for p in room.remote_participants.values():  # camera already on when we joined
+            for pub in p.track_publications.values():
+                if pub.track is not None:
+                    _sub(pub.track, pub, p)
+
+    async def _read(self, track) -> None:
+        async for ev in rtc.VideoStream(track):
+            self.latest, self.latest_at = ev.frame, time.time()
+
+    def jpeg(self) -> bytes | None:
+        if self.latest is None or time.time() - self.latest_at > 3:
+            return None
+        return encode(self.latest, EncodeOptions(format="JPEG", resize_options=ResizeOptions(
+            width=1024, height=768, strategy="scale_aspect_fit")))
+
+
 # ---------------------------------------------------------------- the agent
 class Apprentice(Agent):
     def __init__(self, s: Session) -> None:
@@ -97,6 +133,7 @@ class Apprentice(Agent):
         self.s = s
         self.runner = engine.runner(s, on_log=lambda line: log.info("[analyst] %s", line))
         self.turn_done_at: float | None = None
+        self.video: VideoWatcher | None = None
 
     async def on_user_turn_completed(self, turn_ctx: llm.ChatContext, new_message: llm.ChatMessage) -> None:
         await handle_expert_turn(self, turn_ctx, new_message.text_content or "")
@@ -110,6 +147,7 @@ async def handle_expert_turn(agent: Apprentice, turn_ctx: llm.ChatContext, text:
         return
     s = agent.s
     engine.add_expert_turn(s, text)          # 1. append + save
+    await maybe_look(agent, turn_ctx, text)   # M7: "look at this" -> grab frame -> Claude vision
     agent.runner.trigger()                    # 2. analyst in background (never awaited)
     instr = interviewer.build_instructions(s) # 3. fresh context with current candidates
     update_instructions(turn_ctx, instructions=instr, add_if_missing=True)  # this reply
@@ -117,6 +155,26 @@ async def handle_expert_turn(agent: Apprentice, turn_ctx: llm.ChatContext, text:
     agent.turn_done_at = time.time()
     log.info("turn hook %.0fms (phase=%s, candidates=%d)", 1000 * (time.time() - t0), s.phase,
              len([g for g in s.gaps if g.status in ("open", "asked")]))
+
+
+async def maybe_look(agent: Apprentice, turn_ctx: llm.ChatContext, text: str) -> None:
+    if not (agent.video and vision.wants_to_show(text)):
+        return
+    jpeg = agent.video.jpeg()
+    if not jpeg:
+        return
+    t0 = time.time()
+    try:
+        out = await asyncio.wait_for(vision.describe(agent.s, jpeg, text), timeout=8)
+    except Exception as e:
+        log.warning("vision failed: %s", e)
+        return
+    vision.record(agent.s, jpeg, out["description"])
+    store.save(agent.s)
+    turn_ctx.add_message(role="user", content=(
+        f"[What you can see on the expert's camera: {out['description']}] "
+        f"(A good question about it: {out['question']})"))
+    log.info("vision %.1fs: %s", time.time() - t0, out["description"][:100])
 
 
 # ---------------------------------------------------------------- session bootstrap
@@ -178,6 +236,8 @@ async def entrypoint(ctx: JobContext) -> None:
         turn_handling=make_turn_handling(),
     )
     agent = Apprentice(s)
+    agent.video = VideoWatcher()
+    agent.video.attach(ctx.room)
 
     @session.on("conversation_item_added")
     def _on_item(ev) -> None:
