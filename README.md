@@ -1,11 +1,11 @@
-# Apprentice — an AI that interviews an expert and captures what they don't know they know
+# Last Expert — an AI that interviews an expert and captures what they don't know they know
 
 > Imperial AI Hack 2026 · Voice, Vision & Generative Media track
 
 ## The problem
 Experts are bad at explaining what they do, not because they hide it but because they've stopped noticing it. "You just get a feel for it." "It's basically obvious." Psychologists estimate that most of an expert's working knowledge is **tacit**. When senior people retire or move on, that knowledge leaves with them, and the training documents they leave behind skip exactly the steps a beginner needs.
 
-## What Apprentice does
+## What Last Expert does
 An expert opens a video call with an AI apprentice and says *"I want to teach you how to do X."* The apprentice interviews them like a curious, sharp trainee who **lets no assumption pass**:
 
 - **Live knowledge panel.** As the expert talks, their knowledge appears as structured cards: steps, decision rules, cues, mistakes, edge cases, tools and terms, and quality checks.
@@ -48,7 +48,7 @@ The coverage checklist (goal, steps, decisions, cues, mistakes, edge cases, tool
 ## Evidence: simulated-expert capture score
 `python cli.py --simulate --turns 15` runs the apprentice against a simulated expert. That expert is a Claude role-play of a field geologist who holds 42 hidden facts about identifying minerals and answers like a real expert: jargon, skipped steps, "you just know". A separate grader then counts how many hidden facts ended up in the knowledge base.
 
-**Result:** Apprentice captured **78.6% of the expert's hidden knowledge in 15 questions** (24 facts fully and 18 partially, out of 42). Interviewer replies averaged **1.3 s**. Three prompt-tuning rounds took the score from 28.6% to 78.6% (see NOTES.md).
+**Result:** Last Expert captured **78.6% of the expert's hidden knowledge in 15 questions** (24 facts fully and 18 partially, out of 42). Interviewer replies averaged **1.3 s**. Three prompt-tuning rounds took the score from 28.6% to 78.6% (see NOTES.md).
 
 ## Testing
 - `python cli.py --simulate --turns 15`: a full interview against the simulated expert, with the capture score.

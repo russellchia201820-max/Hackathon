@@ -1,10 +1,10 @@
-# Apprentice: an AI that interviews experts and captures what they don't know they know
+# Last Expert: an AI that interviews experts and captures what they don't know they know
 
 ## The problem
 Experts can't easily explain what they do. Their skill is *tacit*: "you just get a feel for it". When they retire or move on, that knowledge walks out the door, and their handover documents skip exactly the steps a beginner needs.
 
 ## What we built
-Apprentice is a live video call with an AI apprentice. The expert says "I want to teach you how to do X", and the apprentice interviews them like a maximally curious trainee who lets **no assumption pass**. Beside the call, a live panel shows:
+Last Expert is a live video call with an AI apprentice. The expert says "I want to teach you how to do X", and the apprentice interviews them like a maximally curious trainee who lets **no assumption pass**. Beside the call, a live panel shows:
 - **Captured knowledge** building up as structured cards: steps, decision rules, cues, mistakes, edge cases, tools and terms, and quality checks.
 - **Assumptions spotted:** every vague phrase ("usually", "you just know"), undefined term, skipped step or missing *why*, quoted in the expert's own words. Each one goes open → asked → resolved ✓ as the apprentice follows up.
 - **A coverage bar** for the task checklist.
@@ -18,7 +18,7 @@ At the end, **Generate playbook** produces a beginner-ready training document wi
 - **Voice and face:** ElevenLabs Scribe realtime STT, ElevenLabs TTS, LiveKit Agents and an Anam (or Synthesia) avatar.
 
 ## Evidence
-Against a simulated expert holding 42 hidden facts about identifying minerals, Apprentice captured **78.6%** of them in 15 questions. The expert played its part like a real one: jargon, skipped steps, "you just know".
+Against a simulated expert holding 42 hidden facts about identifying minerals, Last Expert captured **78.6%** of them in 15 questions. The expert played its part like a real one: jargon, skipped steps, "you just know".
 
 ## Built with
 Anthropic Claude (Haiku 5.5, Sonnet 5.5) · ElevenLabs Scribe v2 Realtime STT · ElevenLabs TTS · LiveKit Cloud and LiveKit Agents · Anam / Synthesia interactive avatars · FastAPI · vanilla JS
