@@ -55,7 +55,7 @@ async def sim_expert_reply(knowledge: str, s: Session) -> str:
             msgs[-1]["content"] += "\n" + t.text
         else:
             msgs.append({"role": role, "content": t.text})
-    return await llm.complete("analyst", SIM_SYSTEM + knowledge, msgs, max_tokens=300, effort="low")
+    return await llm.complete("analyst", SIM_SYSTEM + knowledge, msgs, max_tokens=450, effort="low")
 
 
 async def capture_score(knowledge: str, s: Session) -> dict:

@@ -20,9 +20,9 @@ def _matches_topic(g: Gap, topic: str) -> bool:
 def score(g: Gap, s: Session) -> float:
     sc = g.priority * 2
     if _matches_topic(g, s.current_topic):
-        sc += 3
-    if s.coverage[g.slot].status == "empty":
-        sc += 1.5
+        sc += 1          # small pull towards the current topic...
+    status = s.coverage[g.slot].status
+    sc += {"empty": 3, "partial": 1, "good": -1}[status]   # ...but breadth wins
     sc -= 2 * g.times_asked
     return sc
 

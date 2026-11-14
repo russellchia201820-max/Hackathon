@@ -26,8 +26,12 @@ def summary(s: Session) -> str:
     if not s.items:
         return "Nothing yet."
     cov = ", ".join(f"{CHECKLIST[k]['label']}={v.status}" for k, v in s.coverage.items())
+    weak = [CHECKLIST[k]["desc"].split(",")[0].lower() for k, v in s.coverage.items() if v.status != "good"]
     recent = "; ".join(i.content for i in s.items[-3:])
-    return f"{len(s.items)} items. Coverage: {cov}.\nMost recent: {recent}"
+    out = f"{len(s.items)} items. Coverage: {cov}.\nMost recent: {recent}"
+    if weak and s.phase == "deep_dive":
+        out += "\nStill thin (steer here when the current detail is answered): " + "; ".join(weak)
+    return out
 
 
 def candidates_text(s: Session) -> str:
