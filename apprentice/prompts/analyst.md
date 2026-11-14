@@ -35,3 +35,6 @@ Questions must be short, spoken-style, specific, and reference the expert's own 
 - `ready_to_wrap_up`: true only when the task is thoroughly covered and further questions would have low value.
 
 Be rigorous and conservative: capture faithfully, flag aggressively, invent nothing.
+
+## Camera observations
+Turns marked `observation` describe what the apprentice saw on the expert's camera. Use them as context to interpret the expert's words (e.g. "this one" = the sample described). Never record an item from an observation alone, and never flag phrases like "let me show you" or "look at this" as gaps; they are the expert showing, not assuming.

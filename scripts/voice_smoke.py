@@ -2,7 +2,8 @@
 """End-to-end voice smoke test without a human: a fake 'expert' joins the LiveKit room,
 speaks ElevenLabs-generated audio, and we check the worker transcribed it and replied.
 Needs: server on :8000 and `python agent/worker.py dev` running.
-Usage: python scripts/voice_smoke.py ["what the expert says" ...]"""
+Usage: python scripts/voice_smoke.py ["what the expert says" ...]
+       python scripts/voice_smoke.py --video   # also publish a camera feed (M7 'Show me' test)"""
 import asyncio
 import os
 import sys
@@ -16,11 +17,34 @@ from livekit import rtc  # noqa: E402
 
 API = "http://localhost:8000"
 SR = 16000
-LINES = sys.argv[1:] or [
+VIDEO = "--video" in sys.argv
+ARGS = [a for a in sys.argv[1:] if a != "--video"]
+LINES = ARGS or ([
+    "Let me show you, look at this one here. See the colour and how it breaks?",
+] if VIDEO else [
     "Sure. Basically you look at the lustre first, then you do a hardness test with your knife. "
     "After that it's streak and cleavage, and honestly you just get a feel for it after a while.",
     "The key thing is you always test a fresh surface, because weathered surfaces lie about colour.",
-]
+])
+
+
+def rock_image(w=640, h=480) -> bytes:
+    """A synthetic 'pink feldspar crystal' on a bench, as RGBA bytes."""
+    from PIL import Image, ImageDraw
+    img = Image.new("RGBA", (w, h), (90, 70, 50, 255))
+    d = ImageDraw.Draw(img)
+    d.polygon([(200, 150), (420, 120), (470, 260), (380, 360), (210, 330), (170, 240)], fill=(226, 150, 140, 255))
+    for x in range(220, 440, 18):  # flat, stepped cleavage faces
+        d.line([(x, 160), (x + 30, 330)], fill=(245, 190, 180, 255), width=3)
+    d.ellipse([280, 200, 320, 230], fill=(255, 255, 255, 255))
+    return img.tobytes()
+
+
+async def camera(source, stop: asyncio.Event) -> None:
+    frame = rtc.VideoFrame(640, 480, rtc.VideoBufferType.RGBA, rock_image())
+    while not stop.is_set():
+        source.capture_frame(frame)
+        await asyncio.sleep(0.2)
 
 
 async def tts_pcm(h: httpx.AsyncClient, text: str) -> bytes:
@@ -78,6 +102,13 @@ async def main():
         await room.local_participant.publish_track(
             rtc.LocalAudioTrack.create_audio_track("mic", source),
             rtc.TrackPublishOptions(source=rtc.TrackSource.SOURCE_MICROPHONE))
+        stop_cam = asyncio.Event()
+        if VIDEO:
+            vsrc = rtc.VideoSource(640, 480)
+            await room.local_participant.publish_track(
+                rtc.LocalVideoTrack.create_video_track("cam", vsrc),
+                rtc.TrackPublishOptions(source=rtc.TrackSource.SOURCE_CAMERA))
+            asyncio.create_task(camera(vsrc, stop_cam))
         feeder = asyncio.create_task(silence(source, 12))  # keep the track alive while the agent greets
         try:
             await asyncio.wait_for(got_audio.wait(), 30)
@@ -109,6 +140,9 @@ async def main():
         errs = [e["text"] for e in st["events"] if e["kind"] == "error"]
         if errs:
             print("errors:", errs)
+        if VIDEO:
+            print(f"frames captured: {[f['description'][:120] for f in st.get('frames', [])]}")
+            stop_cam.set()
         await room.disconnect()
         print("PASS" if ok else "FAIL")
 

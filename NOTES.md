@@ -9,7 +9,7 @@
 - [x] M4 voice: worker registers with LiveKit Cloud; **automated end-to-end voice test passes** (`scripts/voice_smoke.py`: fake expert speaks ElevenLabs audio into the room → Scribe transcribes accurately → apprentice replies → analyst fills panel → `flag_important` tool fires and pins a ★ card). Latency: LLM TTFT 0.8–0.9 s, TTS TTFB 0.13 s, ≈1.3–2.4 s after the 1.2 s end-of-turn wait.
 - [x] M5 avatar: **Anam (Mia) verified live**: starts in 0.3 s, publishes video and audio; lip-sync adds 0.3–0.5 s of playback latency. Fallback verified: a bogus Anam ID (404) → Synthesia (no ID) → voice-only, and the interview carries on. Synthesia is untested live until a `SYNTHESIA_AVATAR_ID` is set (human task).
 - [x] M6 polish: README (Built with, Bounties, Testing), DEVPOST.md and DEMO.md written, capture score inserted. Secret scan of the git history is clean. The GitHub push is left for the human (commands are in the handoff).
-- [~] M7 vision: written (a "look at this" trigger or `request_visual` → frame → Claude vision → observation and thumbnail). Untested live.
+- [x] M7 vision: verified with `scripts/voice_smoke.py --video` (fake camera feed): "look at this" → frame → Claude vision in 3.5 s → observation turn, thumbnail card on the panel, and the apprentice asks about what it saw.
 
 **Next:** once `.env` exists → `python scripts/check_keys.py` → `python cli.py --simulate --turns 12` → tune the prompts → record the capture score in NOTES, README and DEVPOST → live-test the voice and avatar.
 
