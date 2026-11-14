@@ -5,7 +5,7 @@
 - [x] M0 setup: key check 7/9 OK on Sat; avatar IDs then filled: Anam = Mia studio `edf6fdcb-acab-44b8-b974-ded72665ee26`, voice = ElevenLabs Jessica `cgSgspJ2msm6clMCkdW9`. **SYNTHESIA_AVATAR_ID still blank**: Synthesia has no listing API, so copy one from app.synthesia.io → Avatars (human).
 - [x] M1 brain + CLI: 3 tuning rounds done, capture score **78.6% in 15 questions** (table below).
 - [x] M2 server + panel: live text interview via API (turn returns in ~2.9 s, analyst runs in background, panel updates; headless screenshot, no JS errors). Gap dedup by anchor quote.
-- [~] M3 playbook + ask: code and UI done; not yet tested against the API.
+- [x] M3 playbook + ask: playbook 13 s (all sections incl. Not yet covered); ask covered → cited items, pyrite-vs-gold → covered=false with closest info.
 - [~] M4 voice: `agent/worker.py` uses ElevenLabs Scribe v2 realtime STT and ElevenLabs TTS (flash v2.5), with Claude Haiku plus the tools `flag_important`, `request_visual` and `end_interview`. Tool effects are in `apprentice/tools.py`, and the panel shows them as 🔧 chips. The unit test passes. Needs keys.
 - [~] M5 avatar: `agent/avatar.py` switches between Anam and Synthesia, with an automatic fallback to the other provider and then to voice-only. Needs keys.
 - [~] M6 polish: README (with Built with and Bounties sections), DEVPOST.md and DEMO.md are written. Still to do: insert the capture score, then make the GitHub repo public.
