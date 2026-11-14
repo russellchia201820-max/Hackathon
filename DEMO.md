@@ -4,7 +4,7 @@
 1. `conda activate ichack && cd ~/jblinux/hackathons/apprentice`
 2. `python scripts/check_keys.py` → everything OK (avatar: Anam/Synthesia key + minutes left?)
 3. **Terminal 1:** `python -m uvicorn server.app:app --port 8000`
-4. **Terminal 2:** `python agent/worker.py dev` → wait for "registered worker"
+4. **Terminal 2:** `python agent/worker.py dev 2>&1 | tee -a logs/worker.log` → wait for "registered worker"
 5. Chrome → **http://localhost:8000** (never an IP; the mic needs localhost)
 6. Plug in a **headset**. Allow mic access. Volume up.
 7. Do a 2-minute dry run, then click **New session** for a clean one.
@@ -28,6 +28,7 @@
 4. **Backup video.** Play the recorded demo (judging is live; this is only a safety net).
 
 ## Quick fixes
+- Avatar freezes or vanishes → nothing to do. The page says "Reconnecting…" and the call resumes voice-only in about 5 s. Anam seems to cap sessions at about 3 min, so do the avatar part of the demo early. Close other tabs that are in a call (each one uses an Anam session).
 - Agent cuts you off → raise `TURN_END_DELAY_S` (e.g. 1.6) in `.env` and restart the worker.
 - Agent hears itself → use headphones.
 - Windows Chrome can't reach localhost:8000 → run the server with `--host 0.0.0.0`, or run `wsl --shutdown` and restart.

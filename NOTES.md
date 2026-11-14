@@ -19,7 +19,7 @@ conda activate ichack
 cd ~/jblinux/hackathons/apprentice
 python scripts/check_keys.py                 # 1. keys OK?
 python -m uvicorn server.app:app --port 8000 # terminal 1: web + API
-python agent/worker.py dev                   # terminal 2: voice agent (optional)
+python agent/worker.py dev 2>&1 | tee -a logs/worker.log   # terminal 2: voice agent (log readable by Claude)
 # open http://localhost:8000 in Chrome (Windows Chrome works: WSL2 forwards localhost)
 python cli.py --simulate --turns 12          # simulated expert + capture score
 python cli.py                                # you are the expert, in the terminal
@@ -45,6 +45,8 @@ Without activating: prefix with `conda run -n ichack` or use `~/miniconda3/envs/
 - Agent dispatch is explicit: token carries `RoomConfiguration(agents=[RoomAgentDispatch(agent_name="apprentice", metadata={session_id})])`.
 
 ## Gotchas
+- **Anam avatar can die mid-call** (seen ~3 min into a call, plus `429 Concurrent session limit reached` at start; likely trial limits). Agent audio is routed *through* the avatar, so the apprentice went silent (`clear buffer rpc Connection timeout`). Fix: the worker watches for the avatar leaving (or a reply with no audio for 8 s), marks the session `avatar_disabled`, and ends the job; the browser auto-reconnects (max 3/min) and the new job resumes the same session voice-only with a "welcome back". Verified by `python scripts/voice_smoke.py --drop-avatar` (agent left in 2.7 s, resumed voice-only ~4 s later). A **new session** tries the avatar again.
+- No-reply watchdog: if the expert finished a turn and nothing was spoken within `REPLY_TIMEOUT_S` (8 s) and there is no avatar, the worker re-prompts the LLM (once seen: no reply after the expert talked over the apprentice).
 - Opening line was recorded twice when the expert talked over it (interrupted copy). Fixed: opening is non-interruptible and truncated repeats are skipped.
 - Haiku sometimes *says* "I'm flagging that" without calling the tool. Fixed: an emphasis regex ("key thing", "most important", "never ever"…) injects a system nudge into that turn's context; tool calls are logged as `TOOL CALL`.
 - dev mode keeps 0 warm processes by default → 5 s cold start per call. Set `num_idle_processes=1`.
