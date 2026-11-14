@@ -50,6 +50,11 @@ The coverage checklist (goal, steps, decisions, cues, mistakes, edge cases, tool
 
 **Result:** Apprentice captured **78.6% of the expert's hidden knowledge in 15 questions** (24 facts fully and 18 partially, out of 42). Interviewer replies averaged **1.3 s**. Three prompt-tuning rounds took the score from 28.6% to 78.6% (see NOTES.md).
 
+## Testing
+- `python cli.py --simulate --turns 15`: a full interview against the simulated expert, with the capture score.
+- `python scripts/voice_smoke.py`: an **end-to-end voice test with no human**. A fake expert joins the LiveKit room and speaks ElevenLabs-generated audio. The test checks that Scribe transcribes it, the apprentice replies, the analyst fills the panel and the `flag_important` tool fires.
+- `python tests/test_turn_hook.py`: an offline unit test of the voice turn hook and the tools.
+
 ## Setup
 ```bash
 conda create -n ichack python=3.11 -y && conda activate ichack
@@ -79,7 +84,8 @@ The voice agent has real **function tools** that it calls during the interview. 
 | **ElevenLabs Scribe v2 Realtime** | Streaming speech-to-text of the expert |
 | **ElevenLabs TTS** (Flash v2.5) | The apprentice's voice |
 | **LiveKit Cloud + LiveKit Agents 1.8** | WebRTC room, agent orchestration, turn detection (LiveKit turn detector + Silero VAD), noise cancellation (BVC), live transcriptions |
-| **Anam / Synthesia** interactive avatars (LiveKit plugins) | The apprentice's face. Set `AVATAR_PROVIDER`; it falls back automatically to the other provider, then to voice-only |
+| **Anam** interactive avatar ("Mia", LiveKit Anam plugin) | The apprentice's face. We demo with this. Our own STT, LLM and TTS drive it |
+| Synthesia interactive avatar (LiveKit plugin) | A configured fallback (`AVATAR_PROVIDER`). It is used only if Anam fails, before dropping to voice-only |
 | FastAPI, vanilla JS, marked.js, DOMPurify, livekit-client (CDN) | Server and UI, with no build step |
 | Dataset | None. Our test fixture (`tests/fixtures/expert_mineral_id.md`, 42 facts about identifying minerals) was written by us |
 
