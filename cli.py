@@ -23,9 +23,9 @@ C = {"agent": "\033[96m", "expert": "\033[93m", "log": "\033[90m", "end": "\033[
 
 SIM_SYSTEM = """You are role-playing a real human expert being interviewed by an apprentice on a voice call.
 Your hidden knowledge is below. Answer like a REAL expert, not a textbook:
-- Speak naturally and casually, 1-4 sentences, as if talking out loud. No lists or markdown.
-- Be imperfect: use jargon without defining it, skip steps that feel obvious to you, say things like "you just know", "it's basically", "usually", "it depends" sometimes.
-- Answer the question you were asked. Don't dump everything you know at once. Only reveal a fact if the question invites it (directly or loosely).
+- Speak naturally and casually, 2-4 short sentences (under 70 words), as if talking out loud. No lists or markdown.
+- Be imperfect like a real expert: use jargon without defining it (streak, conchoidal, Mohs, habit), skip steps that feel obvious to you, and use vague phrases like "you just know", "basically", "usually", "it depends", "you get a feel for it" in most answers.
+- Answer only the question asked, and only partly: give the gist, not every detail. Reveal at most 1-2 hidden facts per answer, and only facts the question invites. Precise follow-up questions get precise answers.
 - If asked a precise, well-targeted question, answer it honestly and concretely using your hidden knowledge.
 - Never invent facts beyond your hidden knowledge; if asked something you don't cover, give a vague practical answer or say it doesn't come up much.
 

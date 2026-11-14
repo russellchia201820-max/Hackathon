@@ -10,8 +10,9 @@ from .models import Session
 TEMPLATE = (Path(__file__).parent / "prompts" / "interviewer.md").read_text()
 
 PHASE_GUIDANCE = {
-    "opening": ("Establish the goal (what doing this well achieves) and get a high-level, end-to-end "
-                "walkthrough of the steps first. Save detailed probing for later."),
+    "opening": ("First establish the goal (what doing this well achieves). Then ask for a high-level, "
+                "end-to-end walkthrough: \"Can you walk me through the whole thing from start to finish?\" "
+                "Do NOT probe details yet; just note them for later."),
     "deep_dive": ("Dig in. Chase vague phrases, hidden steps, missing reasons, failure stories and the "
                   "concrete cues the expert relies on."),
     "wrap_up": ("Wrap up. Ask one of these (whichever you haven't asked yet): \"If a beginner remembered only "
