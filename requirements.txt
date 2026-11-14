@@ -1,0 +1,11 @@
+anthropic
+openai
+pydantic>=2
+fastapi
+uvicorn[standard]
+python-dotenv
+httpx
+livekit-api
+livekit-agents[anthropic,deepgram,openai,silero,turn-detector,elevenlabs]
+livekit-plugins-noise-cancellation
+livekit-plugins-synthesia
