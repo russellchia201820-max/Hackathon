@@ -1,0 +1,20 @@
+STANDARD OPERATING PROCEDURE: MUD DENSITY USING A MUD BALANCE
+
+Purpose
+To measure the density (mud weight) of drilling fluid.
+
+Equipment
+Mud balance with cup, lid, beam, rider and level bubble. Fresh water for calibration.
+
+Procedure
+1. Place the mud balance base on a flat, level surface.
+2. Fill the clean, dry cup with a fresh sample of the mud to be tested.
+3. Place the lid on the cup and seat it firmly with a twisting motion. Some mud will be expelled through the hole in the lid.
+4. Cover the hole with a finger and wash or wipe the outside of the cup and arm clean and dry.
+5. Place the balance arm on the base, with the knife edge resting on the fulcrum.
+6. Move the rider until the level bubble is centred.
+7. Read the density at the edge of the rider closest to the cup.
+8. Record the mud weight in pounds per gallon (ppg).
+
+Calibration
+Check the balance periodically with fresh water. It should read 8.33 ppg at 70 degrees F. Adjust using the calibration screw or lead shot as required.

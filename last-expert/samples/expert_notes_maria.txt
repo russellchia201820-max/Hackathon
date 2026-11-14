@@ -1,0 +1,13 @@
+Notes from Maria (senior mud engineer, Rig 7), recorded at handover:
+
+Right, mud weight. The SOP is fine but it doesn't tell you the half of it. We use the pressurised balance on this rig, not the open one, because our mud traps a lot of gas and the open cup reads light. The pressurised one lives in the grey Pelican case in the mud lab, bottom shelf, under the retort. The open one in the drawer is only for quick checks.
+
+I always tap the cup a few times before the lid goes on. Then once the lid's seated I wait for the mud to come out of the hole, that's how you know it's full.
+
+The plunger on the pressurised one sticks in winter, so warm it in your hand first. If it feels gritty, the O-ring's gone and you need a new one; spares are in the little tin taped inside the case lid.
+
+Calibrate with fresh water at the start of every shift, not "periodically". If it reads more than a tenth off, don't adjust it yourself, tell the night tool pusher, it's his kit.
+
+If two readings in a row disagree by more than 0.2 ppg, take a sample from the possum belly, not the pit, and run it again.
+
+Log it on the whiteboard AND in the daily report. Dave on the drill floor checks the board, not the report.
