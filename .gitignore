@@ -4,3 +4,9 @@ __pycache__/
 *.pyc
 .venv/
 *.log
+*.swp
+*.swo
+.*.swp
+*~
+.env.*
+!.env.example
