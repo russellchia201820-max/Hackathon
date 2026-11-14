@@ -7,8 +7,8 @@
 - [~] M3 playbook + ask: code + UI done; untested against API.
 - [~] M4 voice: `agent/worker.py` written against installed livekit-agents 1.8.12; turn-hook unit test passes (`tests/test_turn_hook.py`). Needs LiveKit/Deepgram keys.
 - [~] M5 avatar: Synthesia plugin wired behind `AVATAR_ENABLED` with timeout + voice-only fallback. Needs keys.
-- [ ] M6 polish: README/DEMO written; toasts done.
-- [ ] M7 vision: not started.
+- [~] M6 polish: README/DEMO written; toasts, New session, Reset done. Final pass after live tests.
+- [~] M7 vision: `apprentice/vision.py` + VideoWatcher in worker ("look at this" → frame → Claude vision → observation turn + thumbnail). Untested live.
 
 **Next:** once `.env` exists → `python scripts/check_keys.py` → `python cli.py --simulate --turns 12` → tune prompts → record capture score.
 
