@@ -59,6 +59,7 @@ function setSession(id) {
   sessionId = id;
   version = -1;
   seenItems = new Set();
+  seenTools = new Set();
   gapStatus = new Map();
   firstRender = true;
   $("chat").innerHTML = "";
@@ -112,6 +113,8 @@ function render() {
   const nq = s.transcript.filter((t) => t.speaker === "agent").length;
   $("stats").textContent = `${s.items.length} items · ${resolved}/${s.gaps.length} gaps resolved · ${nq} questions`;
 
+  renderTools(s);
+  renderVisualRequest(s);
   renderGaps(s);
   renderItems(s);
   renderFrames(s);
@@ -159,6 +162,24 @@ function renderGaps(s) {
   for (const g of s.gaps) gapStatus.set(g.id, g.status);
 }
 
+let seenTools = new Set();
+function renderTools(s) {
+  const tools = (s.events || []).filter((e) => e.kind === "tool").slice(-4);
+  $("toolChips").innerHTML = tools.map((e) => {
+    const isNew = !firstRender && !seenTools.has(e.ts);
+    return `<span class="toolchip ${isNew ? "new" : ""}">${esc(e.text)}</span>`;
+  }).join("");
+  tools.forEach((e) => seenTools.add(e.ts));
+}
+
+let dismissedVisual = "";
+function renderVisualRequest(s) {
+  const show = s.visual_request && s.visual_request !== dismissedVisual && !(room && room.localParticipant.isCameraEnabled);
+  $("visualReq").classList.toggle("hidden", !show);
+  if (show) $("visualReqText").textContent = "The apprentice wants to see: " + s.visual_request;
+  $("btnCam").classList.toggle("pulse", !!show);
+}
+
 function renderItems(s) {
   $("itemCount").textContent = s.items.length || "";
   if (!s.items.length) {
@@ -171,8 +192,8 @@ function renderItems(s) {
     return `<div class="slot-group"><h3 style="color:${SLOTS[slot].color}">${SLOTS[slot].label}</h3>` +
       its.map((i) => {
         const isNew = !firstRender && !seenItems.has(i.id);
-        return `<div class="item ${i.confidence} ${isNew ? "new" : ""}" style="border-left:4px solid ${SLOTS[slot].color}">
-          ${esc(i.content)}${i.source_quote ? `<div class="meta"><span class="iid">${i.id}</span>“${esc(i.source_quote)}”</div>` : ""}</div>`;
+        return `<div class="item ${i.confidence} ${isNew ? "new" : ""} ${i.pinned ? "pinned" : ""}" style="border-left:4px solid ${SLOTS[slot].color}">
+          ${i.pinned ? '<span class="pin">★ KEY INSIGHT</span>' : ""}${esc(i.content)}${i.source_quote ? `<div class="meta"><span class="iid">${i.id}</span>“${esc(i.source_quote)}”</div>` : ""}</div>`;
       }).join("") + "</div>";
   }).join("");
   $("items").innerHTML = html;
@@ -307,7 +328,7 @@ function isLocalTrack(sid) {
 
 async function startCall() {
   if (!LK) return toast("LiveKit client failed to load (CDN). Use text mode.");
-  if (!config.voice_available) return toast("Voice isn't configured (LiveKit/Deepgram keys missing in .env). Use text mode.");
+  if (!config.voice_available) return toast("Voice isn't configured (LiveKit/ElevenLabs keys missing in .env). Use text mode.");
   if (!sessionId) return openModal();
   const btn = $("btnCall");
   btn.disabled = true; btn.textContent = "Connecting…";
@@ -398,6 +419,7 @@ $("btnCam").addEventListener("click", async () => {
     if (!on && pub?.track) { pub.track.attach($("selfView")); $("selfView").classList.remove("hidden"); }
     else $("selfView").classList.add("hidden");
     $("btnCam").textContent = on ? "📷 Show me" : "📷 Camera off";
+    if (!on) { dismissedVisual = state?.visual_request || ""; $("visualReq").classList.add("hidden"); $("btnCam").classList.remove("pulse"); }
   } catch (e) { toast("Camera failed: " + e.message); }
 });
 

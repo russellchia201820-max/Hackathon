@@ -1,6 +1,6 @@
 # Apprentice — an AI that interviews an expert and captures what they don't know they know
 
-> Imperial AI Hack 2026 · Voice/Vision track
+> Imperial AI Hack 2026 · Voice, Vision & Generative Media track
 
 ## The problem
 Experts are bad at explaining what they do, not because they hide it but because they've stopped noticing it. "You just get a feel for it." "It's basically obvious." Psychologists estimate that most of an expert's working knowledge is **tacit**. When senior people retire or move on, that knowledge leaves with them, and the training documents they leave behind skip exactly the steps a beginner needs.
@@ -22,7 +22,7 @@ Browser (index.html)                                Python backend
         │ WebRTC                                       ▼
         ▼                                         apprentice/  ← the brain (pure Python)
   LiveKit Cloud ◄──► LiveKit Agent worker ───────►  sessions/<id>/state.json
-                      Deepgram STT → Claude → Deepgram TTS → Synthesia avatar
+                      ElevenLabs Scribe STT → Claude (+ tools) → ElevenLabs TTS → Anam / Synthesia avatar
 ```
 
 ### Two loops: fast and slow
@@ -65,8 +65,27 @@ python agent/worker.py dev                     # terminal 2 (voice)
 ```
 Text-only mode (no voice keys needed): just run the server and type in the box under the video.
 
-## Tech
-Python 3.11 · FastAPI · LiveKit Agents 1.8 (Deepgram STT and Aura TTS, Anthropic plugin, Silero VAD, LiveKit turn detector, BVC noise cancellation) · Synthesia interactive avatar · Anthropic Claude (Haiku 5.5 for speed, Sonnet 5.5 for analysis) · vanilla JS, no build step.
+### An agent that acts as well as talks
+The voice agent has real **function tools** that it calls during the interview. Each call appears live on the panel as a 🔧 chip:
+- `flag_important(summary)`: when the expert stresses something ("the key thing is…"), the agent pins it as a ★ key-insight card.
+- `request_visual(reason)`: the agent asks to *see* something. A "Show me" prompt pops up and the expert turns on their camera. The frame goes to Claude vision, and what the agent sees becomes part of the interview.
+- `end_interview()`: called when coverage is complete. It closes the interview and readies the playbook.
+
+## Built with
+| What | Used for |
+|---|---|
+| **Anthropic Claude Haiku 5.5** (`claude-haiku-5-5`) | Fast loop: the interviewer's spoken replies and function-tool calls (through the LiveKit Anthropic plugin) |
+| **Anthropic Claude Sonnet 5.5** (`claude-sonnet-5-5`) | Slow loop: the analyst (structured JSON outputs), the playbook generator, Ask-the-expert, "Show me" vision, and the simulated expert and grader in our test harness |
+| **ElevenLabs Scribe v2 Realtime** | Streaming speech-to-text of the expert |
+| **ElevenLabs TTS** (Flash v2.5) | The apprentice's voice |
+| **LiveKit Cloud + LiveKit Agents 1.8** | WebRTC room, agent orchestration, turn detection (LiveKit turn detector + Silero VAD), noise cancellation (BVC), live transcriptions |
+| **Anam / Synthesia** interactive avatars (LiveKit plugins) | The apprentice's face. Set `AVATAR_PROVIDER`; it falls back automatically to the other provider, then to voice-only |
+| FastAPI, vanilla JS, marked.js, DOMPurify, livekit-client (CDN) | Server and UI, with no build step |
+| Dataset | None. Our test fixture (`tests/fixtures/expert_mineral_id.md`, 42 facts about identifying minerals) was written by us |
+
+## Bounties
+- **Best ElevenLabs project.** A real-time voice agent that goes well beyond text-to-speech. ElevenLabs Scribe realtime transcribes the expert and ElevenLabs TTS voices the apprentice. Underneath sits a two-loop agent that analyses every answer as it arrives, decides what to ask next, and calls tools that change shared state the audience can see. We tuned turn-taking to be patient (experts pause mid-thought), and the interaction is designed around one short question per turn.
+- **Best use of Anam.** An Anam avatar is the apprentice's face. It is driven by our own LLM, STT and TTS stack, with tool calling (pinning insights, requesting visuals, ending the interview) and multi-modal input: the expert can *show* things on camera, and the avatar asks about what it sees.
 
 ## Roadmap
 - **Multi-task roles:** interview someone about a whole job, not just one task.

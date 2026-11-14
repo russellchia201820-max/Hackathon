@@ -1,8 +1,9 @@
 """LiveKit voice agent for Apprentice.
 
 Run:  python agent/worker.py dev
-STT: Deepgram | LLM: Claude (FAST_MODEL) or OpenAI-compatible | TTS: Deepgram Aura or ElevenLabs
-Avatar: Synthesia (AVATAR_ENABLED=true), falling back to voice-only automatically.
+STT: ElevenLabs Scribe v2 realtime | LLM: Claude (FAST_MODEL) or OpenAI-compatible | TTS: ElevenLabs
+Avatar: Anam or Synthesia (AVATAR_PROVIDER, AVATAR_ENABLED=true), falling back to voice-only automatically.
+Tools: end_interview, flag_important, request_visual.
 """
 from __future__ import annotations
 
@@ -17,7 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from apprentice import engine, interviewer, store, vision  # noqa: E402  (loads .env)
+from apprentice import engine, interviewer, store, tools, vision  # noqa: E402  (loads .env)
 from apprentice.models import Session  # noqa: E402
 from livekit import agents  # noqa: E402
 from livekit.agents import (  # noqa: E402
@@ -25,7 +26,14 @@ from livekit.agents import (  # noqa: E402
 from livekit.agents.voice.generation import update_instructions  # noqa: E402
 from livekit import rtc  # noqa: E402
 from livekit.agents.utils.images import EncodeOptions, ResizeOptions, encode  # noqa: E402
-from livekit.plugins import deepgram, silero  # noqa: E402
+from livekit.agents import RunContext, function_tool  # noqa: E402
+from livekit.plugins import elevenlabs, silero  # noqa: E402
+
+from avatar import start_avatar  # noqa: E402
+
+# the LiveKit ElevenLabs plugin reads ELEVEN_API_KEY
+if os.getenv("ELEVENLABS_API_KEY") and not os.getenv("ELEVEN_API_KEY"):
+    os.environ["ELEVEN_API_KEY"] = os.environ["ELEVENLABS_API_KEY"]
 
 log = logging.getLogger("apprentice.worker")
 log.setLevel(logging.INFO)
@@ -54,11 +62,15 @@ def make_llm():
     return FastClaude(model=model, max_tokens=160)
 
 
+def make_stt():
+    return elevenlabs.STT(model=os.getenv("ELEVENLABS_STT_MODEL", "scribe_v2_realtime"), language_code="en")
+
+
 def make_tts():
-    if os.getenv("TTS_PROVIDER", "deepgram") == "elevenlabs" and os.getenv("ELEVENLABS_API_KEY"):
-        from livekit.plugins import elevenlabs
-        return elevenlabs.TTS()
-    return deepgram.TTS(model=os.getenv("DEEPGRAM_TTS_MODEL", "aura-2-thalia-en"))
+    kw = {"model": os.getenv("ELEVENLABS_TTS_MODEL", "eleven_flash_v2_5")}
+    if os.getenv("ELEVENLABS_VOICE_ID"):
+        kw["voice_id"] = os.environ["ELEVENLABS_VOICE_ID"]
+    return elevenlabs.TTS(**kw)
 
 
 def make_turn_handling() -> dict:
@@ -129,7 +141,7 @@ class Apprentice(Agent):
                 ctx.add_message(role="assistant", content=t.text)
             elif t.speaker == "expert":
                 ctx.add_message(role="user", content=t.text)
-        super().__init__(instructions=interviewer.build_instructions(s), chat_ctx=ctx)
+        super().__init__(instructions=interviewer.build_instructions(s, voice=True), chat_ctx=ctx)
         self.s = s
         self.runner = engine.runner(s, on_log=lambda line: log.info("[analyst] %s", line))
         self.turn_done_at: float | None = None
@@ -137,6 +149,26 @@ class Apprentice(Agent):
 
     async def on_user_turn_completed(self, turn_ctx: llm.ChatContext, new_message: llm.ChatMessage) -> None:
         await handle_expert_turn(self, turn_ctx, new_message.text_content or "")
+
+    # ---- function tools (shown on the panel as event chips) ----
+    @function_tool
+    async def flag_important(self, context: RunContext, summary: str, slot: str = "mistakes") -> str:
+        """Pin a key insight when the expert stresses something ("this is the key thing", "the most
+        important part", "never ever do X"). `summary`: one standalone sentence a beginner understands.
+        `slot`: one of goal, steps, decisions, cues, mistakes, edge_cases, tools_terms, quality_check."""
+        return tools.flag_important(self.s, summary, slot)
+
+    @function_tool
+    async def request_visual(self, context: RunContext, reason: str) -> str:
+        """Ask the expert to show something on camera when seeing it would help you understand
+        (a texture, a colour, a technique, a tool). `reason`: what you want to see and why."""
+        return tools.request_visual(self.s, reason)
+
+    @function_tool
+    async def end_interview(self, context: RunContext) -> str:
+        """End the interview. Call this only when the interview phase is 'done', or the expert
+        clearly says they have to stop."""
+        return tools.end_interview(self.s)
 
 
 async def handle_expert_turn(agent: Apprentice, turn_ctx: llm.ChatContext, text: str) -> None:
@@ -149,7 +181,7 @@ async def handle_expert_turn(agent: Apprentice, turn_ctx: llm.ChatContext, text:
     engine.add_expert_turn(s, text)          # 1. append + save
     await maybe_look(agent, turn_ctx, text)   # M7: "look at this" -> grab frame -> Claude vision
     agent.runner.trigger()                    # 2. analyst in background (never awaited)
-    instr = interviewer.build_instructions(s) # 3. fresh context with current candidates
+    instr = interviewer.build_instructions(s, voice=True)  # 3. fresh context with current candidates
     update_instructions(turn_ctx, instructions=instr, add_if_missing=True)  # this reply
     await agent.update_instructions(instr)    # future replies
     agent.turn_done_at = time.time()
@@ -195,26 +227,6 @@ def resolve_session(ctx: JobContext) -> Session:
     return s
 
 
-async def start_avatar(session: AgentSession, room) -> bool:
-    if os.getenv("AVATAR_ENABLED", "false").lower() != "true":
-        log.info("avatar disabled (AVATAR_ENABLED=false) -> voice-only")
-        return False
-    avatar_id = os.getenv("SYNTHESIA_AVATAR_ID")
-    if not (os.getenv("SYNTHESIA_API_KEY") and avatar_id):
-        log.warning("AVATAR_ENABLED but SYNTHESIA_API_KEY/SYNTHESIA_AVATAR_ID missing -> voice-only")
-        return False
-    t0 = time.time()
-    try:
-        from livekit.plugins import synthesia
-        avatar = synthesia.AvatarSession(synthesia.AvatarConfig(avatar_ids=[avatar_id]))
-        await asyncio.wait_for(avatar.start(session, room=room), timeout=float(os.getenv("AVATAR_TIMEOUT_S", "25")))
-        log.info("Synthesia avatar started in %.1fs", time.time() - t0)
-        return True
-    except Exception as e:
-        log.warning("AVATAR FAILED (%s: %s) -> falling back to voice-only", type(e).__name__, e)
-        return False
-
-
 def prewarm(proc: JobProcess) -> None:
     proc.userdata["vad"] = silero.VAD.load()
 
@@ -229,7 +241,7 @@ async def entrypoint(ctx: JobContext) -> None:
     log.info("joined room %s for session %s (%s)", ctx.room.name, s.id, s.objective)
 
     session = AgentSession(
-        stt=deepgram.STT(model="nova-3"),
+        stt=make_stt(),
         llm=make_llm(),
         tts=make_tts(),
         vad=ctx.proc.userdata.get("vad"),
@@ -262,7 +274,8 @@ async def entrypoint(ctx: JobContext) -> None:
         s.log(msg[:300], "error")
         store.save(s)
 
-    await start_avatar(session, ctx.room)
+    provider = await start_avatar(session, ctx.room)
+    s.log(f"avatar: {provider}" if provider else "avatar: off (voice-only)", "info")
 
     nc = noise_cancellation()
     audio_in = room_io.AudioInputOptions(noise_cancellation=nc) if nc else room_io.AudioInputOptions()

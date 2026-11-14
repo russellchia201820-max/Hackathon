@@ -16,7 +16,8 @@ results: list[tuple[str, bool, str]] = []
 
 def rep(name, ok, msg=""):
     results.append((name, ok, msg))
-    print(f"{'\033[92mOK  ' if ok else '\033[91mFAIL'}\033[0m {name:<22} {msg}", flush=True)
+    tag = "\033[92mOK  \033[0m" if ok else "\033[91mFAIL\033[0m"
+    print(f"{tag} {name:<22} {msg}", flush=True)
 
 
 def need(*keys):
@@ -60,14 +61,6 @@ async def check_openai_compat():
         rep("openai_compatible", False, str(e)[:150])
 
 
-async def check_deepgram(h: httpx.AsyncClient):
-    if m := need("DEEPGRAM_API_KEY"):
-        return rep("deepgram", False, f"missing {m}")
-    r = await h.get("https://api.deepgram.com/v1/projects",
-                    headers={"Authorization": f"Token {os.getenv('DEEPGRAM_API_KEY')}"})
-    rep("deepgram", r.status_code == 200, f"HTTP {r.status_code} {r.text[:100] if r.status_code != 200 else ''}")
-
-
 async def check_livekit():
     if m := need("LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET"):
         return rep("livekit", False, f"missing {m}")
@@ -84,10 +77,8 @@ async def check_livekit():
 
 
 async def check_synthesia(h: httpx.AsyncClient):
-    if os.getenv("AVATAR_ENABLED", "false").lower() != "true" and not os.getenv("SYNTHESIA_API_KEY"):
-        return rep("synthesia", True, "skipped (AVATAR_ENABLED=false, no key)")
-    if m := need("SYNTHESIA_API_KEY"):
-        return rep("synthesia", False, f"missing {m}")
+    if not os.getenv("SYNTHESIA_API_KEY"):
+        return rep("synthesia", os.getenv("AVATAR_PROVIDER") != "synthesia", "no SYNTHESIA_API_KEY (optional)")
     r = await h.get("https://api.synthesia.io/v2/videos?limit=1",
                     headers={"Authorization": os.getenv("SYNTHESIA_API_KEY")})
     rep("synthesia (api key)", r.status_code == 200, f"HTTP {r.status_code} {r.text[:120] if r.status_code != 200 else ''}")
@@ -95,19 +86,32 @@ async def check_synthesia(h: httpx.AsyncClient):
         rep("synthesia avatar id", False, "SYNTHESIA_AVATAR_ID not set")
 
 
+async def check_anam(h: httpx.AsyncClient):
+    if not os.getenv("ANAM_API_KEY"):
+        return rep("anam", os.getenv("AVATAR_PROVIDER") != "anam", "no ANAM_API_KEY yet (optional; 'coming soon')")
+    r = await h.get("https://api.anam.ai/v1/avatars", headers={"Authorization": f"Bearer {os.getenv('ANAM_API_KEY')}"})
+    rep("anam (api key)", r.status_code == 200, f"HTTP {r.status_code} {r.text[:120] if r.status_code != 200 else ''}")
+    if not os.getenv("ANAM_AVATAR_ID"):
+        rep("anam avatar id", False, "ANAM_AVATAR_ID not set")
+
+
 async def check_elevenlabs(h: httpx.AsyncClient):
-    if os.getenv("TTS_PROVIDER", "deepgram") != "elevenlabs" and not os.getenv("ELEVENLABS_API_KEY"):
-        return
     if m := need("ELEVENLABS_API_KEY"):
         return rep("elevenlabs", False, f"missing {m}")
-    r = await h.get("https://api.elevenlabs.io/v1/user", headers={"xi-api-key": os.getenv("ELEVENLABS_API_KEY")})
-    rep("elevenlabs", r.status_code == 200, f"HTTP {r.status_code}")
+    hd = {"xi-api-key": os.getenv("ELEVENLABS_API_KEY")}
+    r = await h.get("https://api.elevenlabs.io/v1/models", headers=hd)
+    rep("elevenlabs (key)", r.status_code == 200, f"HTTP {r.status_code} {r.text[:120] if r.status_code != 200 else ''}")
+    # real TTS call (tiny) proves TTS permission + credits
+    vid = os.getenv("ELEVENLABS_VOICE_ID") or "hpp4J3VqNfWAUOO0d1Us"
+    r = await h.post(f"https://api.elevenlabs.io/v1/text-to-speech/{vid}", headers=hd,
+                     json={"text": "OK", "model_id": "eleven_flash_v2_5"})
+    rep("elevenlabs TTS", r.status_code == 200, f"voice {vid}: HTTP {r.status_code} {r.text[:120] if r.status_code != 200 else ''}")
 
 
 async def main():
     async with httpx.AsyncClient(timeout=20) as h:
-        for coro in (check_anthropic(), check_openai_compat(), check_deepgram(h), check_livekit(),
-                     check_synthesia(h), check_elevenlabs(h)):
+        for coro in (check_anthropic(), check_openai_compat(), check_elevenlabs(h), check_livekit(),
+                     check_synthesia(h), check_anam(h)):
             try:
                 await coro
             except Exception as e:

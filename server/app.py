@@ -56,8 +56,9 @@ class AskIn(BaseModel):
 
 @app.get("/api/config")
 def config():
-    voice = all(os.getenv(k) for k in ("LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET", "DEEPGRAM_API_KEY"))
+    voice = all(os.getenv(k) for k in ("LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET", "ELEVENLABS_API_KEY"))
     return {"voice_available": voice, "avatar_enabled": os.getenv("AVATAR_ENABLED", "false").lower() == "true",
+            "avatar_provider": os.getenv("AVATAR_PROVIDER", "synthesia"),
             "livekit_url": os.getenv("LIVEKIT_URL", "")}
 
 

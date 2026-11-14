@@ -35,6 +35,7 @@ class KnowledgeItem(BaseModel):
     source_quote: str = ""
     turn_index: int = -1
     confidence: Literal["high", "medium", "low"] = "medium"
+    pinned: bool = False          # flagged as key insight by the agent's tool
     created_at: float = Field(default_factory=now)
 
 
@@ -84,6 +85,7 @@ class Session(BaseModel):
     wrap_up_expert_turns: int = 0
     events: list[dict] = Field(default_factory=list)   # {ts, text, kind}
     frames: list[Frame] = Field(default_factory=list)
+    visual_request: str = ""      # set by request_visual tool; UI shows a 'Show me' prompt
     mode: Literal["text", "voice"] = "text"
     version: int = 0
     created_at: float = Field(default_factory=now)

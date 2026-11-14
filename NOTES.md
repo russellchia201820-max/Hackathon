@@ -1,16 +1,17 @@
 # NOTES — Apprentice build log
 
 ## Progress (update after every milestone)
-- [x] M0 setup: conda env `ichack` (py3.11), repo, requirements, `.env.example`, `scripts/check_keys.py` — **key check pending: `.env` not yet filled**
-- [~] M1 brain + CLI: all code written (models, checklist, llm, analyst, selector, interviewer, engine, CLI `--simulate`, capture score). **Needs ANTHROPIC key to run/tune.**
-- [~] M2 server + panel: FastAPI + web UI done; verified with mock session (curl + headless screenshot, no JS errors). Live text turn needs key.
-- [~] M3 playbook + ask: code + UI done; untested against API.
-- [~] M4 voice: `agent/worker.py` written against installed livekit-agents 1.8.12; turn-hook unit test passes (`tests/test_turn_hook.py`). Needs LiveKit/Deepgram keys.
-- [~] M5 avatar: Synthesia plugin wired behind `AVATAR_ENABLED` with timeout + voice-only fallback. Needs keys.
-- [~] M6 polish: README/DEMO written; toasts, New session, Reset done. Final pass after live tests.
-- [~] M7 vision: `apprentice/vision.py` + VideoWatcher in worker ("look at this" → frame → Claude vision → observation turn + thumbnail). Untested live.
+**Spec change (Sat eve):** hackathon services only. ElevenLabs is used for STT and TTS, there is no Deepgram, and the avatar is switchable through `AVATAR_PROVIDER=anam|synthesia`. Anam keys are "coming soon", so Synthesia is the first target.
+- [x] M0 setup: conda env `ichack` (py3.11), repo, requirements, `.env.example`, `scripts/check_keys.py` (Anthropic, ElevenLabs key + TTS, LiveKit, Synthesia, Anam). **The key check is still pending because `.env` isn't filled in yet.**
+- [~] M1 brain + CLI: all code written. **Needs the Anthropic key to run and tune.**
+- [~] M2 server + panel: verified with a mock session (curl, plus a headless screenshot with no JS errors).
+- [~] M3 playbook + ask: code and UI done; not yet tested against the API.
+- [~] M4 voice: `agent/worker.py` uses ElevenLabs Scribe v2 realtime STT and ElevenLabs TTS (flash v2.5), with Claude Haiku plus the tools `flag_important`, `request_visual` and `end_interview`. Tool effects are in `apprentice/tools.py`, and the panel shows them as 🔧 chips. The unit test passes. Needs keys.
+- [~] M5 avatar: `agent/avatar.py` switches between Anam and Synthesia, with an automatic fallback to the other provider and then to voice-only. Needs keys.
+- [~] M6 polish: README (with Built with and Bounties sections), DEVPOST.md and DEMO.md are written. Still to do: insert the capture score, then make the GitHub repo public.
+- [~] M7 vision: written (a "look at this" trigger or `request_visual` → frame → Claude vision → observation and thumbnail). Untested live.
 
-**Next:** once `.env` exists → `python scripts/check_keys.py` → `python cli.py --simulate --turns 12` → tune prompts → record capture score.
+**Next:** once `.env` exists → `python scripts/check_keys.py` → `python cli.py --simulate --turns 12` → tune the prompts → record the capture score in NOTES, README and DEVPOST → live-test the voice and avatar.
 
 ## How to run
 ```bash
@@ -36,6 +37,9 @@ Without activating: prefix with `conda run -n ichack` or use `~/miniconda3/envs/
 - Gap times_asked counted per distinct agent turn (no double counting on reruns). Gaps asked ≥2× → dropped.
 - Dedup in code too (difflib ratio ≥0.85 items, ≥0.75 gap questions). Panel caps open gaps at 8.
 - Fast model: Haiku 5.5 with thinking disabled + effort low, max_tokens 150–160 (latency). Analyst: Sonnet 5.5, effort medium (`ANALYST_EFFORT` env overrides).
+- Voice STT/TTS = ElevenLabs only (hackathon services). The LiveKit plugin reads `ELEVEN_API_KEY`; worker copies `ELEVENLABS_API_KEY` into it. STT model `scribe_v2_realtime` (env `ELEVENLABS_STT_MODEL`), TTS `eleven_flash_v2_5` (env `ELEVENLABS_TTS_MODEL`), voice `ELEVENLABS_VOICE_ID`.
+- Avatar: `agent/avatar.py` — `anam.AvatarSession(persona_config=anam.PersonaConfig(name, avatarId))`, `synthesia.AvatarSession(synthesia.AvatarConfig(avatar_ids=[id]))`, both `.start(session, room=room)` before `session.start()`, 25 s timeout, then try the other, then voice-only. Demo with Anam if both work (bounty).
+- Tools: function tools on the `Apprentice` Agent; effects in `apprentice/tools.py` (pinned item, `visual_request` → UI banner + pulsing Show me button, phase=done). Tool instructions only added in voice mode (`build_instructions(s, voice=True)`).
 - Voice: preemptive generation disabled (instructions change each turn, so it would be invalidated anyway). Endpointing `min_delay=TURN_END_DELAY_S` (1.2 s) + `inference.TurnDetector()` (cloud, local fallback). Noise cancellation: LiveKit BVC.
 - In `on_user_turn_completed` the reply uses a *copy* of the chat ctx made before the hook, so the worker writes fresh instructions into `turn_ctx` directly **and** calls `agent.update_instructions()` for later turns.
 - Agent dispatch is explicit: token carries `RoomConfiguration(agents=[RoomAgentDispatch(agent_name="apprentice", metadata={session_id})])`.
@@ -58,6 +62,10 @@ Without activating: prefix with `conda run -n ichack` or use `~/miniconda3/envs/
 - [ ] Generate playbook; download .md; ask 2 covered + 1 uncovered question in "Ask the expert"
 - [ ] Start call, talk to it with **headphones**, confirm captions + panel fill during a spoken interview
 - [ ] Check it doesn't cut you off mid-thought (tune `TURN_END_DELAY_S`, e.g. 1.5)
-- [ ] Full interview with the Synthesia avatar (`AVATAR_ENABLED=true`); note avatar lag
+- [ ] Full interview with the Synthesia avatar (`AVATAR_ENABLED=true`, `AVATAR_PROVIDER=synthesia`); note avatar lag
+- [ ] Same with Anam once keys arrive (`AVATAR_PROVIDER=anam`) — demo with Anam if it works
+- [ ] Say "the key thing is…" → 🔧 chip + ★ pinned card; let it ask to see something → Show me → thumbnail
+- [ ] Pick a warm ElevenLabs voice and set `ELEVENLABS_VOICE_ID`
 - [ ] View the page on the projector from 3 m — legible?
-- [ ] **Record a backup demo video** (OBS / Windows Game Bar Win+Alt+R)
+- [ ] Make GitHub repo public + push (commands in handoff)
+- [ ] **Record a backup demo video** (judging is live; safety net only) (OBS / Windows Game Bar Win+Alt+R)

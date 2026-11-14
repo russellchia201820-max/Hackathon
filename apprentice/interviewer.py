@@ -40,13 +40,21 @@ def candidates_text(s: Session) -> str:
         for n, g in enumerate(c, 1))
 
 
-def build_instructions(s: Session) -> str:
+VOICE_TOOLS = """
+## Tools (use them; they show up live on the expert's screen)
+- flag_important(summary, slot): when the expert stresses something ("the key thing is…", "never…", "most important…"), call it with a one-sentence standalone summary, then keep interviewing.
+- request_visual(reason): when seeing the thing would really help (a texture, colour, technique, tool), call it, then ask them to show it on camera.
+- end_interview(): ONLY when the phase is "done" or the expert says they must stop. Then say a warm goodbye.
+Never read tool names aloud."""
+
+
+def build_instructions(s: Session, voice: bool = False) -> str:
     return (TEMPLATE.replace("{{expert_name}}", s.expert_name or "the expert")
             .replace("{{objective}}", s.objective or "(they will tell you)")
             .replace("{{phase}}", s.phase)
             .replace("{{phase_guidance}}", PHASE_GUIDANCE[s.phase])
             .replace("{{summary}}", summary(s))
-            .replace("{{candidates}}", candidates_text(s)))
+            .replace("{{candidates}}", candidates_text(s))) + (VOICE_TOOLS if voice else "")
 
 
 def opening_line(s: Session) -> str:

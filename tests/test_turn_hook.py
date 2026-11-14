@@ -55,6 +55,16 @@ async def main():
     assert s2.coverage["steps"].status == "partial"
     # second-turn instructions include the new gap as a candidate
     assert "you just know" in __import__("apprentice.interviewer").interviewer.build_instructions(s)
+    # function tools registered + their effects on state
+    names = {t.id for t in agent.tools}
+    assert {"flag_important", "request_visual", "end_interview"} <= names, names
+    from apprentice import tools
+    tools.flag_important(s, "Always test a fresh surface.", "mistakes")
+    tools.request_visual(s, "see the streak colour")
+    tools.end_interview(s)
+    s3 = store.load(s.id)
+    assert s3.items[-1].pinned and s3.visual_request and s3.phase == "done"
+    assert sum(e["kind"] == "tool" for e in s3.events) == 3
     print(f"PASS turn hook ({hook_ms:.1f}ms, non-blocking, dirty-rerun, dedup, instructions refreshed)")
 
 
