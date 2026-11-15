@@ -18,7 +18,7 @@ At the end, **Generate playbook** produces a beginner-ready training document wi
 - **Voice and face:** ElevenLabs Scribe realtime STT, ElevenLabs TTS, LiveKit Agents and a Synthesia interactive avatar.
 
 ## Evidence
-Against a simulated expert holding 42 hidden facts about identifying minerals, Last Expert captured **78.6%** of them in 15 questions. The expert played its part like a real one: jargon, skipped steps, "you just know".
+Against a simulated expert holding 42 hidden facts about identifying minerals, Last Expert captured **78.6%** of them in 15 questions. On an everyday task (a student's commute home, 20 hidden facts) it captured **92.5% in 12 questions**, asking for exactly the specifics a newcomer needs: where home is, which stop, which route, where to park. The expert played its part like a real one: jargon, skipped steps, "you just know".
 
 ## Built with
 Anthropic Claude (Haiku 5.5, Sonnet 5.5) · ElevenLabs Scribe v2 Realtime STT · ElevenLabs TTS · LiveKit Cloud and LiveKit Agents · Synthesia interactive avatar (Anam as fallback) · FastAPI · vanilla JS
