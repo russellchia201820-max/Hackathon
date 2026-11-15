@@ -1,6 +1,6 @@
 # Last Expert — an AI that interviews an expert and captures what they don't know they know
 
-> Imperial AI Hack 2026 · Voice, Vision & Generative Media track
+> Imperial AI Hack 2026 · Voice, Vision & Generative Media track (Track 3)
 
 ## The problem
 Experts are bad at explaining what they do, not because they hide it but because they've stopped noticing it. "You just get a feel for it." "It's basically obvious." Psychologists estimate that most of an expert's working knowledge is **tacit**. When senior people retire or move on, that knowledge leaves with them, and the training documents they leave behind skip exactly the steps a beginner needs.
@@ -98,3 +98,8 @@ The voice agent has real **function tools** that it calls during the interview. 
 - **Multiple experts:** merge and reconcile what several experts know, and flag where they disagree.
 - **Video understanding:** the expert *shows* the task and the apprentice asks about what it sees ("Show me" mode).
 - **Exports:** to an LMS (SCORM), to SOP templates, and to **agent skills**, so captured expertise can drive AI agents directly.
+
+## Team
+- Joaquin Garcia Santiago — joaquin.garcia-santiago26@imperial.ac.uk
+- James Bryne — james.byrne26@imperial.ac.uk
+- Russell Chia — rmc12@ic.ac.uk
