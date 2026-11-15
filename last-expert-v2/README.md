@@ -1,6 +1,6 @@
 # Last Expert — an AI that interviews an expert and captures what they don't know they know
 
-> Imperial AI Hack 2026 · Voice, Vision & Generative Media track (Track 3)
+> Imperial AI Hack 2026 · Autonomous Agents (Track 2)
 
 ## The problem
 Experts are bad at explaining what they do, not because they hide it but because they've stopped noticing it. "You just get a feel for it." "It's basically obvious." Psychologists estimate that most of an expert's working knowledge is **tacit**. When senior people retire or move on, that knowledge leaves with them, and the training documents they leave behind skip exactly the steps a beginner needs.
